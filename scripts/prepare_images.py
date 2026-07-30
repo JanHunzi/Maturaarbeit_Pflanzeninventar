@@ -6,9 +6,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CSV_FILE = ROOT / 'Pflanzenliste_Maturaarbeit_DBV2.0_cvs.csv'
-INPUT_DIR = ROOT / 'images'
-OUTPUT_DIR = ROOT / 'images'
-SUPPORTED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
+INPUT_DIR = ROOT / 'Images'
+OUTPUT_DIR = ROOT / 'Images'
+SUPPORTED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp', '.JPG', '.JPEG', '.PNG', '.WEBP'}
 
 
 def read_ids():
@@ -37,14 +37,14 @@ def copy_images(ids):
         raise SystemExit(f'Ordner nicht gefunden: {INPUT_DIR}')
 
     files = sorted([p for p in INPUT_DIR.iterdir() if p.is_file()])
-    image_files = [p for p in files if p.suffix.lower() in SUPPORTED_EXTENSIONS]
+    image_files = [p for p in files if p.suffix.lower() in {ext.lower() for ext in SUPPORTED_EXTENSIONS}]
     if not image_files:
         raise SystemExit(f'Keine unterstützten Bilddateien gefunden in {INPUT_DIR}')
 
     for index, image_file in enumerate(image_files[:len(ids)], start=1):
         plant_id = ids[index - 1]
         stem = Path(image_file.name)
-        ext = stem.suffix.lower()
+        ext = stem.suffix
         target_name = f'PF-{int(plant_id):03d}{ext}'
         target = OUTPUT_DIR / target_name
         if image_file.name != target_name:

@@ -46,7 +46,7 @@ Du kannst zusätzlich einen Freitext in allen Spalten suchen.
 
 ### Bilder für die Webseite
 
-Wenn du Pflanzenbilder hinzufügen möchtest, lege sie in einem Ordner `images/` ab. Die Seite sucht nach Dateien im Format:
+Wenn du Pflanzenbilder hinzufügen möchtest, lege sie in einem Ordner `Images/` ab. Die Seite sucht nach Dateien im Format:
 
 - `PF-001.jpg`
 - `PF-001.png`
