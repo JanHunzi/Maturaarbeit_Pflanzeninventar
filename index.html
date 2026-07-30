@@ -76,6 +76,7 @@
       </div>
 
     <button id="searchButton">Suche starten</button>
+    <button id="resetButton">Zurücksetzen</button>
     <div class="footer" id="status">Lade Daten...</div>
 
     <div id="result"></div>
@@ -167,6 +168,19 @@
       return String(value || '').trim() === selected;
     }
 
+    function resetFilters() {
+      document.getElementById('query').value = '';
+      document.getElementById('field-month').querySelectorAll('option').forEach(option => {
+        option.selected = option.value === 'all';
+      });
+      Object.keys(FIELD_MAP).forEach(id => {
+        const select = document.getElementById(id);
+        if (select) select.value = 'all';
+      });
+      document.getElementById('status').textContent = `Daten geladen: ${rows.length} Zeile(n)`;
+      renderTable(rows);
+    }
+
     function search() {
       const query = document.getElementById('query').value.trim().toLowerCase();
       const monthSelect = document.getElementById('field-month');
@@ -210,6 +224,10 @@
         document.getElementById('searchButton').addEventListener('click', event => {
           event.preventDefault();
           search();
+        });
+        document.getElementById('resetButton').addEventListener('click', event => {
+          event.preventDefault();
+          resetFilters();
         });
       } catch (error) {
         status.innerHTML = '<span class="error">Fehler: ' + error.message + '</span>';
