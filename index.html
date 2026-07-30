@@ -209,6 +209,7 @@
     }
 
     async function init() {
+      window.onbeforeunload = null;
       const status = document.getElementById('status');
       try {
         const response = await fetch(CSV_FILE);
