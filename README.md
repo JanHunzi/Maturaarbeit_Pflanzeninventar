@@ -40,10 +40,20 @@ Die Oberfläche bietet Dropdown-Felder für:
 - `Wuchsform`
 - `Blütenfarbe`
 - `Gepflanzt`
-- `Notizen`
 - `Monat`
 
 Du kannst zusätzlich einen Freitext in allen Spalten suchen.
+
+### Bilder für die Webseite
+
+Wenn du Pflanzenbilder hinzufügen möchtest, lege sie in einem Ordner `images/` ab. Die Seite sucht nach Dateien im Format:
+
+- `PF-001.jpg`
+- `PF-001.png`
+- `PF-001.1.jpg`
+- `PF-001.2.png`
+
+Die Nummer entspricht der `ID` der Pflanze aus der CSV-Datei.
 
 ### Externen Zugriff ermöglichen
 

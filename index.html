@@ -14,6 +14,8 @@
     .suggestions { position: absolute; top: calc(100% + 0.25rem); left: 0; right: 0; background: #fff; border: 1px solid #bbb; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-height: 240px; overflow-y: auto; z-index: 10; display: none; }
     .suggestion-item { padding: 0.5rem 0.7rem; cursor: pointer; }
     .suggestion-item:hover { background: #f4f7fb; }
+    .image-cell { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
+    .image-cell img { max-width: 100px; max-height: 80px; object-fit: cover; border-radius: 4px; background: #fff; }
     select, input[type=text], button { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; }
     button { cursor: pointer; background: #2a7ae2; color: #fff; border: none; transition: background 0.2s ease; }
     button:hover { background: #1c61c3; }
@@ -98,6 +100,9 @@
       'field-planted': 'Gepflanzt'
     };
     const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    const IMAGE_BASE_PATH = 'images';
+    const IMAGE_EXTENSIONS = ['jpg','jpeg','png'];
+    const MAX_IMAGE_VARIANTS = 4;
     let rows = [];
     let fieldNames = [];
     let suggestionValues = [];
@@ -172,6 +177,69 @@
       }
     }
 
+    function padId(id) {
+      return String(id).padStart(3, '0');
+    }
+
+    function getImageCandidates(id) {
+      const rawId = String(id || '').trim();
+      if (!rawId) return [];
+      const padded = padId(rawId);
+      const prefixes = [
+        `PF-${padded}`,
+        `PF${padded}`,
+        `PF-${rawId}`,
+        `PF${rawId}`,
+        padded,
+        rawId
+      ];
+      const candidates = [];
+      prefixes.forEach(prefix => {
+        IMAGE_EXTENSIONS.forEach(ext => candidates.push(`${IMAGE_BASE_PATH}/${prefix}.${ext}`));
+        for (let index = 1; index <= MAX_IMAGE_VARIANTS; index += 1) {
+          IMAGE_EXTENSIONS.forEach(ext => candidates.push(`${IMAGE_BASE_PATH}/${prefix}.${index}.${ext}`));
+        }
+      });
+      return Array.from(new Set(candidates));
+    }
+
+    function renderImageCell(id) {
+      const cell = document.createElement('td');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'image-cell';
+      const placeholder = document.createElement('span');
+      placeholder.textContent = 'kein Bild';
+      placeholder.style.color = '#777';
+      wrapper.appendChild(placeholder);
+
+      if (!id) {
+        cell.appendChild(wrapper);
+        return cell;
+      }
+
+      const candidates = getImageCandidates(id);
+      candidates.forEach(src => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = `Pflanzenbild ${id}`;
+        img.onload = () => {
+          if (placeholder.parentNode) {
+            placeholder.remove();
+          }
+        };
+        img.onerror = () => {
+          img.remove();
+          if (!wrapper.querySelector('img') && !wrapper.contains(placeholder)) {
+            wrapper.appendChild(placeholder);
+          }
+        };
+        wrapper.appendChild(img);
+      });
+
+      cell.appendChild(wrapper);
+      return cell;
+    }
+
     function renderTable(filtered) {
       const result = document.getElementById('result');
       if (!filtered.length) {
@@ -181,7 +249,8 @@
       const table = document.createElement('table');
       const thead = document.createElement('thead');
       const headerRow = document.createElement('tr');
-      fieldNames.forEach(name => {
+      const headers = ['Bild', ...fieldNames];
+      headers.forEach(name => {
         const th = document.createElement('th');
         th.textContent = name;
         headerRow.appendChild(th);
@@ -192,6 +261,7 @@
       const tbody = document.createElement('tbody');
       filtered.forEach(row => {
         const tr = document.createElement('tr');
+        tr.appendChild(renderImageCell(row.ID));
         fieldNames.forEach(name => {
           const td = document.createElement('td');
           td.textContent = row[name] || '';
