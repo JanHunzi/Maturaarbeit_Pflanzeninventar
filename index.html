@@ -231,6 +231,7 @@
           event.preventDefault();
           resetFilters();
         });
+        renderTable(rows);
       } catch (error) {
         status.innerHTML = '<span class="error">Fehler: ' + error.message + '</span>';
       }
