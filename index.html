@@ -220,13 +220,35 @@
         status.textContent = `Daten geladen: ${rows.length} Zeile(n)`;
 
         Object.keys(FIELD_MAP).forEach(id => fillDropdown(id, uniqueValues(FIELD_MAP[id])));
-        const searchInputs = ['query', 'field-name-de', 'field-name-latin', 'field-family', 'field-growth', 'field-color', 'field-planted', 'field-month'];
+        const searchInputs = ['query', 'field-name-de', 'field-name-latin', 'field-family', 'field-growth', 'field-color', 'field-planted'];
         searchInputs.forEach(id => {
           const element = document.getElementById(id);
           if (!element) return;
           element.addEventListener('input', search);
           element.addEventListener('change', search);
         });
+        const monthSelect = document.getElementById('field-month');
+        if (monthSelect) {
+          monthSelect.addEventListener('mousedown', event => {
+            if (event.target.tagName !== 'OPTION') return;
+            event.preventDefault();
+            const option = event.target;
+            if (option.value === 'all') {
+              Array.from(monthSelect.options).forEach(opt => {
+                opt.selected = opt.value === 'all';
+              });
+            } else {
+              option.selected = !option.selected;
+              const allOption = monthSelect.querySelector('option[value="all"]');
+              if (allOption) allOption.selected = false;
+              const anyMonthSelected = Array.from(monthSelect.options).some(opt => opt.selected && opt.value !== 'all');
+              if (!anyMonthSelected && allOption) {
+                allOption.selected = true;
+              }
+            }
+            search();
+          });
+        }
         document.getElementById('resetButton').addEventListener('click', event => {
           event.preventDefault();
           resetFilters();
