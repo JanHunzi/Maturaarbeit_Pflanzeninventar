@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 CSV_PATH = Path(__file__).with_name("Pflanzenliste_Maturaarbeit_DBV2.0_cvs.csv")
-FILTER_FIELDS = ["Name Deutsch", "Name Latein", "Pflanzenfamilie", "Wuchsform", "Blütenfarbe", "Gepflanzt", "Notizen"]
+FILTER_FIELDS = ["Name Deutsch", "Name Latein", "Pflanzenfamilie", "Wuchsform", "Blütenfarbe", "Gepflanzt"]
 MONTH_FIELDS = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
 
 
