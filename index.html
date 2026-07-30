@@ -74,7 +74,6 @@
         </div>
       </div>
 
-    <button id="searchButton">Suche starten</button>
     <button id="resetButton">Zurücksetzen</button>
     <div class="footer" id="status">Lade Daten...</div>
 
@@ -169,7 +168,8 @@
 
     function resetFilters() {
       document.getElementById('query').value = '';
-      document.getElementById('field-month').querySelectorAll('option').forEach(option => {
+      const monthSelect = document.getElementById('field-month');
+      monthSelect.querySelectorAll('option').forEach(option => {
         option.selected = option.value === 'all';
       });
       Object.keys(FIELD_MAP).forEach(id => {
@@ -209,7 +209,6 @@
     }
 
     async function init() {
-      window.onbeforeunload = null;
       const status = document.getElementById('status');
       try {
         const response = await fetch(CSV_FILE);
@@ -221,9 +220,12 @@
         status.textContent = `Daten geladen: ${rows.length} Zeile(n)`;
 
         Object.keys(FIELD_MAP).forEach(id => fillDropdown(id, uniqueValues(FIELD_MAP[id])));
-        document.getElementById('searchButton').addEventListener('click', event => {
-          event.preventDefault();
-          search();
+        const searchInputs = ['query', 'field-name-de', 'field-name-latin', 'field-family', 'field-growth', 'field-color', 'field-planted', 'field-month'];
+        searchInputs.forEach(id => {
+          const element = document.getElementById(id);
+          if (!element) return;
+          element.addEventListener('input', search);
+          element.addEventListener('change', search);
         });
         document.getElementById('resetButton').addEventListener('click', event => {
           event.preventDefault();
