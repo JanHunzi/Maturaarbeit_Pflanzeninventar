@@ -10,6 +10,10 @@
     h1 { margin-bottom: 0.5rem; }
     .toolbar { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem; }
     .toolbar label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+    .autocomplete-wrapper { position: relative; }
+    .suggestions { position: absolute; top: calc(100% + 0.25rem); left: 0; right: 0; background: #fff; border: 1px solid #bbb; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-height: 240px; overflow-y: auto; z-index: 10; display: none; }
+    .suggestion-item { padding: 0.5rem 0.7rem; cursor: pointer; }
+    .suggestion-item:hover { background: #f4f7fb; }
     select, input[type=text], button { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; }
     button { cursor: pointer; background: #2a7ae2; color: #fff; border: none; transition: background 0.2s ease; }
     button:hover { background: #1c61c3; }
@@ -28,7 +32,10 @@
       <div class="toolbar">
         <div>
           <label for="query">Freitext</label>
-          <input id="query" type="text" placeholder="z. B. Wasser, Salvia, gelb" />
+          <div class="autocomplete-wrapper">
+            <input id="query" type="text" placeholder="z. B. Wasser, Salvia, gelb" autocomplete="off" />
+            <div id="querySuggestions" class="suggestions"></div>
+          </div>
         </div>
         <div>
           <label for="field-name-de">Name Deutsch</label>
@@ -93,6 +100,7 @@
     const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     let rows = [];
     let fieldNames = [];
+    let suggestionValues = [];
 
     function parseCsv(text) {
       const lines = text.replace(/\r/g,'').split('\n').filter(line => line.trim());
@@ -127,6 +135,41 @@
         option.textContent = value;
         select.appendChild(option);
       });
+    }
+
+    function renderQuerySuggestions(query) {
+      const box = document.getElementById('querySuggestions');
+      if (!box) return;
+      const normalized = query.trim().toLowerCase();
+      if (!normalized) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+      }
+      const matches = suggestionValues.filter(value => value.toLowerCase().includes(normalized)).slice(0, 8);
+      if (!matches.length) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+      }
+      box.innerHTML = matches.map(value => `<div class="suggestion-item">${value}</div>`).join('');
+      box.style.display = 'block';
+      box.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('mousedown', event => {
+          event.preventDefault();
+          const value = item.textContent;
+          document.getElementById('query').value = value;
+          box.style.display = 'none';
+          search();
+        });
+      });
+    }
+
+    function hideQuerySuggestions() {
+      const box = document.getElementById('querySuggestions');
+      if (box) {
+        box.style.display = 'none';
+      }
     }
 
     function renderTable(filtered) {
@@ -220,7 +263,26 @@
         status.textContent = `Daten geladen: ${rows.length} Zeile(n)`;
 
         Object.keys(FIELD_MAP).forEach(id => fillDropdown(id, uniqueValues(FIELD_MAP[id])));
-        const searchInputs = ['query', 'field-name-de', 'field-name-latin', 'field-family', 'field-growth', 'field-color', 'field-planted'];
+        const suggestionSet = new Set();
+        rows.forEach(row => {
+          Object.values(row).forEach(value => {
+            if (value) suggestionSet.add(value.trim());
+          });
+        });
+        suggestionValues = Array.from(suggestionSet).sort((a, b) => a.localeCompare(b, 'de'));
+
+        const queryInput = document.getElementById('query');
+        if (queryInput) {
+          queryInput.addEventListener('input', event => {
+            search();
+            renderQuerySuggestions(event.target.value || '');
+          });
+          queryInput.addEventListener('focus', event => {
+            renderQuerySuggestions(event.target.value || '');
+          });
+        }
+
+        const searchInputs = ['field-name-de', 'field-name-latin', 'field-family', 'field-growth', 'field-color', 'field-planted'];
         searchInputs.forEach(id => {
           const element = document.getElementById(id);
           if (!element) return;
@@ -249,6 +311,13 @@
             search();
           });
         }
+
+        document.addEventListener('click', event => {
+          const wrapper = document.querySelector('.autocomplete-wrapper');
+          if (!wrapper || wrapper.contains(event.target)) return;
+          hideQuerySuggestions();
+        });
+
         document.getElementById('resetButton').addEventListener('click', event => {
           event.preventDefault();
           resetFilters();
