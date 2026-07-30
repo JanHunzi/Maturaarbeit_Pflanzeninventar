@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pflanzeninventar Suche</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1rem; line-height: 1.5; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { margin-bottom: 0.5rem; }
+    .toolbar { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem; }
+    .toolbar label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+    select, input[type=text], button { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; }
+    button { cursor: pointer; background: #2a7ae2; color: #fff; border: none; transition: background 0.2s ease; }
+    button:hover { background: #1c61c3; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ddd; padding: 0.55rem; text-align: left; }
+    th { background: #f4f4f4; }
+    .footer { margin-top: 1rem; color: #555; }
+    .spinner { display: inline-block; margin-left: 0.5rem; }
+    .error { color: #b00; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pflanzeninventar Suche</h1>
+    <p>Suche die CSV-Daten nach Begriffen und wähle Filter für Name, Familie, Wuchsform, Farbe, Gepflanzt, Notizen und Monate.</p>
+
+    <div class="toolbar">
+      <div>
+        <label for="query">Freitext</label>
+        <input id="query" type="text" placeholder="z. B. Wasser, Salvia, gelb" />
+      </div>
+      <div>
+        <label for="field-name-de">Name Deutsch</label>
+        <select id="field-name-de"><option value="all">Alle</option></select>
+      </div>
+      <div>
+        <label for="field-name-latin">Name Latein</label>
+        <select id="field-name-latin"><option value="all">Alle</option></select>
+      </div>
+      <div>
+        <label for="field-family">Pflanzenfamilie</label>
+        <select id="field-family"><option value="all">Alle</option></select>
+      </div>
+      <div>
+        <label for="field-growth">Wuchsform</label>
+        <select id="field-growth"><option value="all">Alle</option></select>
+      </div>
+      <div>
+        <label for="field-color">Blütenfarbe</label>
+        <select id="field-color"><option value="all">Alle</option></select>
+      </div>
+      <div>
+        <label for="field-planted">Gepflanzt</label>
+        <select id="field-planted"><option value="all">Alle</option></select>
+      </div>
+      <div>
+        <label for="field-notes">Notizen</label>
+        <select id="field-notes"><option value="all">Alle</option></select>
+      </div>
+      <div>
+        <label for="field-month">Monat</label>
+        <select id="field-month">
+          <option value="all">Alle Monate</option>
+          <option>Jan</option>
+          <option>Feb</option>
+          <option>Mar</option>
+          <option>Apr</option>
+          <option>Mai</option>
+          <option>Jun</option>
+          <option>Jul</option>
+          <option>Aug</option>
+          <option>Sep</option>
+          <option>Okt</option>
+          <option>Nov</option>
+          <option>Dez</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="searchButton">Suche starten</button>
+    <div class="footer" id="status">Lade Daten...</div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const CSV_FILE = 'Pflanzenliste_Maturaarbeit_DBV2.0_cvs.csv';
+    const FIELD_MAP = {
+      'field-name-de': 'Name Deutsch',
+      'field-name-latin': 'Name Latein',
+      'field-family': 'Pflanzenfamilie',
+      'field-growth': 'Wuchsform',
+      'field-color': 'Blütenfarbe',
+      'field-planted': 'Gepflanzt',
+      'field-notes': 'Notizen'
+    };
+    const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    let rows = [];
+    let fieldNames = [];
+
+    function parseCsv(text) {
+      const lines = text.replace(/\r/g,'').split('\n').filter(line => line.trim());
+      const header = lines[0].split(';').map(cell => cell.trim());
+      const data = lines.slice(1).map(line => {
+        const parts = line.split(';');
+        const row = {};
+        header.forEach((name, index) => row[name] = (parts[index] || '').trim());
+        return row;
+      });
+      return {header, data};
+    }
+
+    function uniqueValues(field) {
+      const values = new Set();
+      rows.forEach(row => {
+        const value = (row[field] || '').trim();
+        if (value) values.add(value);
+      });
+      return Array.from(values).sort((a,b) => a.localeCompare(b, 'de'));
+    }
+
+    function fillDropdown(id, values) {
+      const select = document.getElementById(id);
+      values.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+    }
+
+    function renderTable(filtered) {
+      const result = document.getElementById('result');
+      if (!filtered.length) {
+        result.innerHTML = '<p>Keine Treffer gefunden.</p>';
+        return;
+      }
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      fieldNames.forEach(name => {
+        const th = document.createElement('th');
+        th.textContent = name;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      filtered.forEach(row => {
+        const tr = document.createElement('tr');
+        fieldNames.forEach(name => {
+          const td = document.createElement('td');
+          td.textContent = row[name] || '';
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      result.innerHTML = '';
+      result.appendChild(table);
+    }
+
+    function matchesFilter(value, selected) {
+      if (selected === 'all') return true;
+      return String(value || '').trim() === selected;
+    }
+
+    function search() {
+      const query = document.getElementById('query').value.trim().toLowerCase();
+      const month = document.getElementById('field-month').value;
+      const filters = {};
+      Object.keys(FIELD_MAP).forEach(id => {
+        filters[FIELD_MAP[id]] = document.getElementById(id).value;
+      });
+
+      const filtered = rows.filter(row => {
+        if (query) {
+          const text = Object.values(row).join(' ').toLowerCase();
+          if (!text.includes(query)) return false;
+        }
+        for (const [field, selected] of Object.entries(filters)) {
+          if (!matchesFilter(row[field], selected)) return false;
+        }
+        if (month !== 'all') {
+          if (String(row[month] || '').trim() !== '1') return false;
+        }
+        return true;
+      });
+
+      document.getElementById('status').textContent = `${filtered.length} Ergebnis(se)`;
+      renderTable(filtered);
+    }
+
+    async function init() {
+      const status = document.getElementById('status');
+      try {
+        const response = await fetch(CSV_FILE);
+        if (!response.ok) throw new Error('CSV-Datei konnte nicht geladen werden.');
+        const text = await response.text();
+        const parsed = parseCsv(text);
+        fieldNames = parsed.header;
+        rows = parsed.data;
+        status.textContent = `Daten geladen: ${rows.length} Zeile(n)`;
+
+        Object.keys(FIELD_MAP).forEach(id => fillDropdown(id, uniqueValues(FIELD_MAP[id])));
+        document.getElementById('searchButton').addEventListener('click', event => {
+          event.preventDefault();
+          search();
+        });
+      } catch (error) {
+        status.innerHTML = '<span class="error">Fehler: ' + error.message + '</span>';
+      }
+    }
+
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>
