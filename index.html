@@ -54,24 +54,26 @@
         <div>
           <label for="field-planted">Gepflanzt</label>
           <select id="field-planted"><option value="all">Alle</option></select>
-        <label for="field-month">Monat(e)</label>
-        <select id="field-month" multiple size="5">
-          <option value="all">Alle Monate</option>
-          <option>Jan</option>
-          <option>Feb</option>
-          <option>Mar</option>
-          <option>Apr</option>
-          <option>Mai</option>
-          <option>Jun</option>
-          <option>Jul</option>
-          <option>Aug</option>
-          <option>Sep</option>
-          <option>Okt</option>
-          <option>Nov</option>
-          <option>Dez</option>
-        </select>
+        </div>
+        <div>
+          <label for="field-month">Monat(e)</label>
+          <select id="field-month" multiple size="5">
+            <option value="all">Alle Monate</option>
+            <option>Jan</option>
+            <option>Feb</option>
+            <option>Mar</option>
+            <option>Apr</option>
+            <option>Mai</option>
+            <option>Jun</option>
+            <option>Jul</option>
+            <option>Aug</option>
+            <option>Sep</option>
+            <option>Okt</option>
+            <option>Nov</option>
+            <option>Dez</option>
+          </select>
+        </div>
       </div>
-    </div>
 
     <button id="searchButton">Suche starten</button>
     <div class="footer" id="status">Lade Daten...</div>
@@ -87,8 +89,7 @@
       'field-family': 'Pflanzenfamilie',
       'field-growth': 'Wuchsform',
       'field-color': 'Blütenfarbe',
-      'field-planted': 'Gepflanzt',
-      'field-notes': 'Notizen'
+      'field-planted': 'Gepflanzt'
     };
     const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     let rows = [];
@@ -117,6 +118,10 @@
 
     function fillDropdown(id, values) {
       const select = document.getElementById(id);
+      if (!select) {
+        console.warn(`Dropdown element not found: ${id}`);
+        return;
+      }
       values.forEach(value => {
         const option = document.createElement('option');
         option.value = value;
