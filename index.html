@@ -60,8 +60,8 @@
         <select id="field-notes"><option value="all">Alle</option></select>
       </div>
       <div>
-        <label for="field-month">Monat</label>
-        <select id="field-month">
+        <label for="field-month">Monat(e)</label>
+        <select id="field-month" multiple size="5">
           <option value="all">Alle Monate</option>
           <option>Jan</option>
           <option>Feb</option>
@@ -170,7 +170,9 @@
 
     function search() {
       const query = document.getElementById('query').value.trim().toLowerCase();
-      const month = document.getElementById('field-month').value;
+      const monthSelect = document.getElementById('field-month');
+      const selectedMonths = Array.from(monthSelect.selectedOptions).map(option => option.value);
+      const months = selectedMonths.includes('all') || selectedMonths.length === 0 ? ['all'] : selectedMonths;
       const filters = {};
       Object.keys(FIELD_MAP).forEach(id => {
         filters[FIELD_MAP[id]] = document.getElementById(id).value;
@@ -184,8 +186,8 @@
         for (const [field, selected] of Object.entries(filters)) {
           if (!matchesFilter(row[field], selected)) return false;
         }
-        if (month !== 'all') {
-          if (String(row[month] || '').trim() !== '1') return false;
+        if (months[0] !== 'all') {
+          if (!months.some(month => String(row[month] || '').trim() === '1')) return false;
         }
         return true;
       });

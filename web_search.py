@@ -70,7 +70,7 @@ def build_select(name, label, options, selected):
     return f'<label for="{html.escape(name)}">{html.escape(label)}:</label><select id="{html.escape(name)}" name="{html.escape(name)}">' + "".join(items) + "</select>"
 
 
-def build_page(query, regex, ignore_case, selected_filters, selected_month, results, fieldnames, dropdowns):
+def build_page(query, regex, ignore_case, selected_filters, selected_months, results, fieldnames, dropdowns):
     query_html = html.escape(query or "")
     regex_checked = "checked" if regex else ""
     case_sensitive_checked = "checked" if not ignore_case else ""
@@ -81,12 +81,12 @@ def build_page(query, regex, ignore_case, selected_filters, selected_month, resu
         values = dropdowns.get(field, [])
         filter_html.append(build_select(field, field, values, selected_value))
 
-    month_options = ["all"] + MONTH_FIELDS
-    month_items = [f'<option value="all">Alle Monate</option>']
+    selected_months_set = set(selected_months or [])
+    month_items = [f'<option value="all"{" selected" if "all" in selected_months_set else ""}>Alle Monate</option>']
     for month in MONTH_FIELDS:
-        selected_attr = " selected" if month == selected_month else ""
+        selected_attr = " selected" if month in selected_months_set else ""
         month_items.append(f'<option value="{html.escape(month)}"{selected_attr}>{html.escape(month)}</option>')
-    month_select = '<label for="month">Monat:</label><select id="month" name="month">' + "".join(month_items) + "</select>"
+    month_select = '<label for="month">Monat(e):</label><select id="month" name="month" multiple size="4">' + "".join(month_items) + "</select>"
 
     result_count = len(results) if results is not None else 0
     result_info = f"<p>{result_count} Zeile(n) gefunden.</p>" if results is not None else ""
@@ -166,7 +166,9 @@ class SearchHandler(BaseHTTPRequestHandler):
         regex = "regex" in params
         ignore_case = params.get("case", [""])[0] != "sensitive"
         selected_filters = {field: params.get(field, ["all"])[0] for field in FILTER_FIELDS}
-        selected_month = params.get("month", ["all"])[0]
+        selected_months = params.get("month", ["all"])
+        if "all" in selected_months:
+            selected_months = ["all"]
 
         if SearchHandler.rows is None:
             SearchHandler.rows = load_rows(CSV_PATH)
@@ -185,12 +187,12 @@ class SearchHandler(BaseHTTPRequestHandler):
                     break
             if not match_filters:
                 continue
-            if selected_month != "all":
-                if str(row.get(selected_month, "")).strip() != "1":
+            if selected_months != ["all"]:
+                if not any(str(row.get(month, "")).strip() == "1" for month in selected_months):
                     continue
             results.append(row)
 
-        page = build_page(query, regex, ignore_case, selected_filters, selected_month, results, SearchHandler.fieldnames, SearchHandler.dropdowns)
+        page = build_page(query, regex, ignore_case, selected_filters, selected_months, results, SearchHandler.fieldnames, SearchHandler.dropdowns)
 
         body = page.encode("utf-8")
         self.send_response(200)
