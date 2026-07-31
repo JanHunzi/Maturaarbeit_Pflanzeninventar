@@ -15,7 +15,9 @@
     .suggestion-item { padding: 0.5rem 0.7rem; cursor: pointer; }
     .suggestion-item:hover { background: #f4f7fb; }
     .image-cell { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
-    .image-cell img { max-width: 180px; max-height: 140px; width: auto; height: auto; object-fit: contain; border-radius: 6px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+    .image-cell img { max-width: 220px; max-height: 160px; width: auto; height: auto; object-fit: contain; border-radius: 6px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+    .image-cell button { width: auto; padding: 0.45rem 0.75rem; border-radius: 5px; border: 1px solid #bbb; background: #fff; color: #333; cursor: pointer; }
+    .image-cell button:hover { background: #f7f9fc; }
     select, input[type=text], button { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; }
     button { cursor: pointer; background: #2a7ae2; color: #fff; border: none; transition: background 0.2s ease; }
     button:hover { background: #1c61c3; }
@@ -208,37 +210,58 @@
       const cell = document.createElement('td');
       const wrapper = document.createElement('div');
       wrapper.className = 'image-cell';
-      const placeholder = document.createElement('span');
-      placeholder.textContent = 'kein Bild';
-      placeholder.style.color = '#777';
-      wrapper.appendChild(placeholder);
 
       if (!id) {
+        const placeholder = document.createElement('span');
+        placeholder.textContent = 'kein Bild';
+        placeholder.style.color = '#777';
+        wrapper.appendChild(placeholder);
         cell.appendChild(wrapper);
         return cell;
       }
 
       const candidates = getImageCandidates(id);
-      candidates.forEach(src => {
-        const img = document.createElement('img');
-        img.src = src;
-        img.alt = `Pflanzenbild ${id}`;
-        img.onload = () => {
-          if (placeholder.parentNode) {
-            placeholder.remove();
-          }
-        };
-        img.onerror = () => {
-          img.remove();
-          if (!wrapper.querySelector('img') && !wrapper.contains(placeholder)) {
-            wrapper.appendChild(placeholder);
-          }
-        };
-        wrapper.appendChild(img);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Bild laden';
+      button.addEventListener('click', () => {
+        button.disabled = true;
+        button.textContent = 'Lädt...';
+        loadImageCandidates(candidates, wrapper, button, id);
       });
-
+      wrapper.appendChild(button);
       cell.appendChild(wrapper);
       return cell;
+    }
+
+    function loadImageCandidates(candidates, wrapper, button, id) {
+      const placeholder = document.createElement('span');
+      placeholder.textContent = 'kein Bild gefunden';
+      placeholder.style.color = '#777';
+
+      let currentIndex = 0;
+      const tryNext = () => {
+        if (currentIndex >= candidates.length) {
+          wrapper.innerHTML = '';
+          wrapper.appendChild(placeholder);
+          return;
+        }
+
+        const src = candidates[currentIndex++];
+        const img = document.createElement('img');
+        img.alt = `Pflanzenbild ${id}`;
+        img.src = src;
+        img.onload = () => {
+          wrapper.innerHTML = '';
+          wrapper.appendChild(img);
+        };
+        img.onerror = () => {
+          tryNext();
+        };
+      };
+
+      wrapper.innerHTML = '';
+      tryNext();
     }
 
     function renderTable(filtered) {
