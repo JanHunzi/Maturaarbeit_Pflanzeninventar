@@ -100,8 +100,8 @@
       'field-planted': 'Gepflanzt'
     };
     const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-    const IMAGE_BASE_PATH = 'Images';
-    const IMAGE_EXTENSIONS = ['jpg','jpeg','png','JPG','JPEG','PNG'];
+    const IMAGE_BASE_PATH = 'images';
+    const IMAGE_EXTENSIONS = ['jpg','jpeg','png','webp'];
     const MAX_IMAGE_VARIANTS = 4;
     let rows = [];
     let fieldNames = [];
@@ -200,9 +200,8 @@
           IMAGE_EXTENSIONS.forEach(ext => candidates.push(`${IMAGE_BASE_PATH}/${prefix}.${index}.${ext}`));
         }
       });
-      const uppercaseCandidates = candidates.map(candidate => candidate.replace(/\.(jpg|jpeg|png)$/i, match => match.toUpperCase()));
+      const uppercaseCandidates = candidates.map(candidate => candidate.replace(/\.(jpg|jpeg|png|webp)$/i, match => match.toUpperCase()));
       return Array.from(new Set([...candidates, ...uppercaseCandidates]));
-      return Array.from(new Set(candidates));
     }
 
     function renderImageCell(id) {

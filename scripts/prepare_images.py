@@ -5,8 +5,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CSV_FILE = ROOT / 'Pflanzenliste_Maturaarbeit_DBV2.0_cvs.csv'
-INPUT_DIR = ROOT / 'Images'
-OUTPUT_DIR = ROOT / 'Images'
+INPUT_DIR = ROOT / 'images'
+OUTPUT_DIR = ROOT / 'images'
 SUPPORTED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp', '.JPG', '.JPEG', '.PNG', '.WEBP'}
 
 
