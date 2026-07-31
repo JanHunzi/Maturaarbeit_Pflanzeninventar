@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pflanzeninventar Suche</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 1rem; line-height: 1.5; }
-    .container { max-width: 1200px; margin: 0 auto; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; line-height: 1.5; box-sizing: border-box; }
+    .container { width: min(100%, 1400px); margin: 0 auto; }
     h1 { margin-bottom: 0.5rem; }
     .toolbar { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem; }
     .toolbar label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+    .page-actions { display: flex; gap: 0.75rem; margin: 0.75rem 0 1rem; flex-wrap: wrap; }
+    .page-actions button { flex: 1 1 220px; }
     .autocomplete-wrapper { position: relative; }
     .suggestions { position: absolute; top: calc(100% + 0.25rem); left: 0; right: 0; background: #fff; border: 1px solid #bbb; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-height: 240px; overflow-y: auto; z-index: 10; display: none; }
+    select[multiple] { height: auto; }
+    select[multiple][size="1"] { height: auto; }
+    select[multiple].compact { min-height: 2.7rem; }
     .suggestion-item { padding: 0.5rem 0.7rem; cursor: pointer; }
     .suggestion-item:hover { background: #f4f7fb; }
     .image-cell { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
@@ -21,12 +26,123 @@
     select, input[type=text], button { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; }
     button { cursor: pointer; background: #2a7ae2; color: #fff; border: none; transition: background 0.2s ease; }
     button:hover { background: #1c61c3; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .table-scroll { width: 100%; overflow-x: auto; margin-top: 1rem; }
+    table { width: 100%; min-width: max-content; border-collapse: collapse; }
     th, td { border: 1px solid #ddd; padding: 0.55rem; text-align: left; }
     th { background: #f4f4f4; }
     .footer { margin-top: 1rem; color: #555; }
     .spinner { display: inline-block; margin-left: 0.5rem; }
     .error { color: #b00; }
+    .image-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 1rem;
+    }
+    .image-modal-content {
+      width: min(100%, 960px);
+      max-height: 100%;
+      background: #fff;
+      border-radius: 12px;
+      overflow: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      position: relative;
+      padding: 1rem;
+    }
+    .image-modal-close {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 2rem;
+      height: 2rem;
+      border: none;
+      background: #222;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .image-modal-title {
+      margin-bottom: 0.75rem;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .image-modal-gallery {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .image-modal-img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      object-fit: contain;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+    .plant-modal-form {
+      display: grid;
+      gap: 0.9rem;
+    }
+    .plant-modal-grid {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .plant-modal-field label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .plant-modal-months {
+      display: grid;
+      gap: 0.4rem;
+      grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+    }
+    .plant-modal-months label,
+    .plant-modal-photos label {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+      font-weight: 400;
+      margin-bottom: 0;
+    }
+    .plant-modal-photos {
+      display: grid;
+      gap: 0.5rem;
+    }
+    .plant-modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .plant-modal-actions .danger {
+      background: #c62828;
+      color: #fff;
+    }
+    .plant-modal-actions .danger:hover {
+      background: #a61d1d;
+    }
+    @media (max-width: 900px) {
+      body { padding: 0.75rem; }
+      .toolbar { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+      .page-actions { flex-direction: column; }
+      .page-actions button { flex: 1 1 auto; }
+      th, td { padding: 0.45rem; }
+      .image-cell img { max-width: 180px; max-height: 130px; }
+    }
+    @media (max-width: 600px) {
+      body { padding: 0.5rem; }
+      h1 { font-size: 1.4rem; }
+      .toolbar { grid-template-columns: 1fr; }
+      .image-cell { gap: 0.25rem; }
+      .image-modal-content { padding: 0.85rem; }
+      .plant-modal-grid { grid-template-columns: 1fr; }
+      .plant-modal-months { grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); }
+    }
   </style>
 </head>
 <body>
@@ -66,8 +182,8 @@
           <select id="field-planted"><option value="all">Alle</option></select>
         </div>
         <div>
-          <label for="field-month">Monat(e)</label>
-          <select id="field-month" multiple size="5">
+          <label for="field-month">Blütenmonate</label>
+          <select id="field-month" multiple size="1">
             <option value="all">Alle Monate</option>
             <option>Jan</option>
             <option>Feb</option>
@@ -85,7 +201,10 @@
         </div>
       </div>
 
-    <button id="resetButton">Zurücksetzen</button>
+    <div class="page-actions">
+      <button id="addPlantButton" type="button">Neue Pflanze hinzufügen</button>
+      <button id="resetButton" type="button">Zurücksetzen</button>
+    </div>
     <div class="footer" id="status">Lade Daten...</div>
 
     <div id="result"></div>
@@ -103,11 +222,195 @@
     };
     const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     const IMAGE_BASE_PATH = 'images';
-    const IMAGE_EXTENSIONS = ['webp','jpg','jpeg','png'];
-    const MAX_IMAGE_VARIANTS = 12;
+    const IMAGE_INDEX_FILE = 'images/image_index.json';
+    const IMAGE_EXTENSIONS = ['webp', 'jpg', 'jpeg', 'png'];
+    const MAX_IMAGE_VARIANTS = 8;
+    const EDIT_PASSWORD = 'JanHunziker';
+    const MANUAL_PLANTS_STORAGE_KEY = 'pflanzeninventar_manual_plants';
+    const DELETED_PLANTS_STORAGE_KEY = 'pflanzeninventar_deleted_plants';
+    const MANUAL_ROW_FIELDS = ['ID', 'Name Deutsch', 'Name Latein', 'Pflanzenfamilie', 'Wuchsform', 'Blütenfarbe', 'Gepflanzt', ...MONTH_FIELDS];
+    const EDITABLE_FIELDS = ['Name Deutsch', 'Name Latein', 'Pflanzenfamilie', 'Wuchsform', 'Blütenfarbe', 'Gepflanzt'];
     let rows = [];
+    let baseRows = [];
     let fieldNames = [];
     let suggestionValues = [];
+    let imageIndex = {};
+    let manualPlants = [];
+    let deletedPlantIds = [];
+
+    function getImageFilesForId(id) {
+      const key = String(Number(id));
+      const files = imageIndex[key] || [];
+      return files.map(name => `${IMAGE_BASE_PATH}/${name}`);
+    }
+
+    function safeJsonParse(value, fallback) {
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function getNextPlantId(sourceRows) {
+      const ids = sourceRows
+        .map(row => Number.parseInt(row.ID, 10))
+        .filter(number => Number.isFinite(number));
+      const nextId = ids.length ? Math.max(...ids) + 1 : 1;
+      return String(nextId);
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error(`Datei konnte nicht gelesen werden: ${file.name}`));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function normalizeManualPlant(entry) {
+      if (!entry || typeof entry !== 'object') return null;
+      const row = {};
+      MANUAL_ROW_FIELDS.forEach(field => {
+        row[field] = String(entry[field] ?? '').trim();
+      });
+      row.ID = String(entry.ID ?? '').trim();
+      MONTH_FIELDS.forEach(month => {
+        row[month] = String(entry[month] ?? '0').trim() === '1' ? '1' : '0';
+      });
+      row.__photos = Array.isArray(entry.__photos)
+        ? entry.__photos.map(photo => ({
+            name: String(photo?.name || '').trim(),
+            src: String(photo?.src || '').trim()
+          })).filter(photo => photo.src)
+        : [];
+      return row;
+    }
+
+    function mergeRows(baseRows, overrides) {
+      const overrideMap = new Map();
+      overrides.forEach(row => {
+        if (row && row.ID) {
+          overrideMap.set(String(row.ID), row);
+        }
+      });
+
+      const merged = baseRows.map(row => {
+        const override = overrideMap.get(String(row.ID));
+        if (!override) return row;
+        return {
+          ...row,
+          ...override,
+          __photos: Array.isArray(override.__photos) ? override.__photos : (Array.isArray(row.__photos) ? row.__photos : [])
+        };
+      });
+
+      overrides.forEach(row => {
+        if (!row || !row.ID) return;
+        const existing = baseRows.some(baseRow => String(baseRow.ID) === String(row.ID));
+        if (!existing) merged.push(row);
+      });
+
+      return merged;
+    }
+
+    function loadDeletedPlantIds() {
+      const stored = safeJsonParse(localStorage.getItem(DELETED_PLANTS_STORAGE_KEY) || '[]', []);
+      if (!Array.isArray(stored)) return [];
+      return stored.map(id => String(id || '').trim()).filter(Boolean);
+    }
+
+    function loadManualPlants() {
+      const stored = safeJsonParse(localStorage.getItem(MANUAL_PLANTS_STORAGE_KEY) || '[]', []);
+      if (!Array.isArray(stored)) return [];
+      return stored.map(normalizeManualPlant).filter(Boolean);
+    }
+
+    function saveManualPlants() {
+      localStorage.setItem(MANUAL_PLANTS_STORAGE_KEY, JSON.stringify(manualPlants));
+    }
+
+    function saveDeletedPlantIds() {
+      localStorage.setItem(DELETED_PLANTS_STORAGE_KEY, JSON.stringify(deletedPlantIds));
+    }
+
+    function isDeletedPlantId(id) {
+      return deletedPlantIds.includes(String(id || '').trim());
+    }
+
+    function refreshRows() {
+      rows = mergeRows(baseRows, manualPlants).filter(row => !isDeletedPlantId(row.ID));
+    }
+
+    function getRowImageSources(row) {
+      const uploadedSources = Array.isArray(row.__photos)
+        ? row.__photos.map(photo => photo.src).filter(Boolean)
+        : [];
+      const indexedSources = row.ID ? getImageFilesForId(row.ID) : [];
+      return uploadedSources.length ? [...uploadedSources, ...indexedSources] : indexedSources;
+    }
+
+    function deletePlantById(id) {
+      const normalizedId = String(id || '').trim();
+      if (!normalizedId) return;
+      manualPlants = manualPlants.filter(row => String(row.ID) !== normalizedId);
+      if (!deletedPlantIds.includes(normalizedId)) {
+        deletedPlantIds.push(normalizedId);
+      }
+      saveManualPlants();
+      saveDeletedPlantIds();
+      refreshRows();
+      refreshFilterOptions();
+      search();
+    }
+
+    function findRowById(id) {
+      const normalizedId = String(id || '').trim();
+      return rows.find(row => String(row.ID || '').trim() === normalizedId) || null;
+    }
+
+    function refreshFilterOptions() {
+      const currentValues = {};
+      Object.keys(FIELD_MAP).forEach(id => {
+        const select = document.getElementById(id);
+        currentValues[id] = select ? select.value : 'all';
+      });
+
+      Object.keys(FIELD_MAP).forEach(id => {
+        const select = document.getElementById(id);
+        if (!select) return;
+        select.innerHTML = '<option value="all">Alle</option>';
+        uniqueValues(FIELD_MAP[id]).forEach(value => {
+          const option = document.createElement('option');
+          option.value = value;
+          option.textContent = value;
+          select.appendChild(option);
+        });
+        if (currentValues[id] && Array.from(select.options).some(option => option.value === currentValues[id])) {
+          select.value = currentValues[id];
+        }
+      });
+
+      const suggestionSet = new Set();
+      rows.forEach(row => {
+        fieldNames.forEach(field => {
+          const value = row[field];
+          if (value) suggestionSet.add(String(value).trim());
+        });
+      });
+      suggestionValues = Array.from(suggestionSet).sort((a, b) => a.localeCompare(b, 'de'));
+    }
+
+    function isEditAllowed() {
+      const enteredPassword = window.prompt('Passwort für das Bearbeiten eingeben:');
+      if (enteredPassword === null) return false;
+      if (enteredPassword !== EDIT_PASSWORD) {
+        window.alert('Falsches Passwort.');
+        return false;
+      }
+      return true;
+    }
 
     function parseCsv(text) {
       const lines = text.replace(/\r/g,'').split('\n').filter(line => line.trim());
@@ -191,31 +494,38 @@
       const baseName = `PF-${padded}`;
 
       if (type === 'preview') {
-        IMAGE_EXTENSIONS.forEach(ext => {
-          candidates.push(`${IMAGE_BASE_PATH}/${baseName}_web.${ext}`);
-        });
+        // Prefer numbered preview files like PF-003.1_web.webp first.
         for (let index = 1; index <= MAX_IMAGE_VARIANTS; index += 1) {
           IMAGE_EXTENSIONS.forEach(ext => {
             candidates.push(`${IMAGE_BASE_PATH}/${baseName}.${index}_web.${ext}`);
           });
         }
-      } else {
         IMAGE_EXTENSIONS.forEach(ext => {
-          candidates.push(`${IMAGE_BASE_PATH}/${baseName}.${ext}`);
+          candidates.push(`${IMAGE_BASE_PATH}/${baseName}_web.${ext}`);
         });
+      } else {
+        // Match both preview-style _web files and plain image files.
         for (let index = 1; index <= MAX_IMAGE_VARIANTS; index += 1) {
           IMAGE_EXTENSIONS.forEach(ext => {
+            candidates.push(`${IMAGE_BASE_PATH}/${baseName}.${index}_web.${ext}`);
             candidates.push(`${IMAGE_BASE_PATH}/${baseName}.${index}.${ext}`);
           });
         }
+        IMAGE_EXTENSIONS.forEach(ext => {
+          candidates.push(`${IMAGE_BASE_PATH}/${baseName}_web.${ext}`);
+          candidates.push(`${IMAGE_BASE_PATH}/${baseName}.${ext}`);
+        });
       }
       return Array.from(new Set(candidates));
     }
 
-    function renderImageCell(id) {
+    function renderImageCell(row) {
       const cell = document.createElement('td');
       const wrapper = document.createElement('div');
       wrapper.className = 'image-cell';
+
+      const id = row?.ID || '';
+      const latinName = row?.['Name Latein'] || '';
 
       if (!id) {
         const placeholder = document.createElement('span');
@@ -226,107 +536,347 @@
         return cell;
       }
 
-      const previewCandidates = getImageCandidates(id, 'preview');
-      const originalCandidates = getImageCandidates(id, 'original');
+      const imageFiles = getRowImageSources(row || {});
+      if (!imageFiles.length) {
+        const placeholder = document.createElement('span');
+        placeholder.textContent = 'kein Bild vorhanden';
+        placeholder.style.color = '#777';
+        wrapper.appendChild(placeholder);
+        cell.appendChild(wrapper);
+        return cell;
+      }
 
-      const previewButton = document.createElement('button');
-      previewButton.type = 'button';
-      previewButton.textContent = 'Vorschau laden';
+      const previewSrc = imageFiles[0];
+      const originalCandidates = imageFiles;
 
-      const originalButton = document.createElement('button');
-      originalButton.type = 'button';
-      originalButton.textContent = 'Originale anzeigen';
-      originalButton.disabled = true;
-      originalButton.style.marginLeft = '0.5rem';
+      const previewArea = document.createElement('div');
+      previewArea.style.width = '90px';
+      previewArea.style.maxWidth = '100%';
+      previewArea.style.aspectRatio = '1 / 1';
+      previewArea.style.height = 'auto';
+      previewArea.style.display = 'flex';
+      previewArea.style.alignItems = 'center';
+      previewArea.style.justifyContent = 'center';
+      previewArea.style.background = '#fafafa';
+      previewArea.style.borderRadius = '8px';
+      previewArea.style.border = '1px solid #ddd';
+      previewArea.style.padding = '0.5rem';
+      previewArea.style.position = 'relative';
+      previewArea.style.cursor = 'default';
+      previewArea.textContent = 'Vorschau wird geladen...';
+      previewArea.style.overflow = 'hidden';
 
-      previewButton.addEventListener('click', () => {
-        previewButton.disabled = true;
-        previewButton.textContent = 'Vorschau lädt...';
-        loadFirstSuccessfulImage(previewCandidates, wrapper, previewButton, () => {
-          originalButton.disabled = false;
+      const openOriginalPopup = () => {
+        openImagePopup(originalCandidates, latinName || id);
+      };
+
+      const loadOriginals = () => {
+        previewArea.style.cursor = 'default';
+        previewArea.title = '';
+        openOriginalPopup();
+      };
+
+      const showPreview = () => {
+        previewArea.textContent = 'Vorschau lädt...';
+        previewArea.style.cursor = 'default';
+        loadPreviewImage(previewSrc, previewArea, null, () => {
+          previewArea.style.cursor = 'pointer';
+          previewArea.title = 'Klicke für Originalbilder';
+          previewArea.onclick = loadOriginals;
         }, id);
-      });
+      };
 
-      originalButton.addEventListener('click', () => {
-        originalButton.disabled = true;
-        originalButton.textContent = 'Originale laden...';
-        loadAllImages(originalCandidates, wrapper, originalButton, id);
-      });
-
-      wrapper.appendChild(previewButton);
-      wrapper.appendChild(originalButton);
+      wrapper.appendChild(previewArea);
       cell.appendChild(wrapper);
+
+      showPreview();
+
       return cell;
     }
 
-    function loadFirstSuccessfulImage(candidates, wrapper, button, onSuccess, id) {
-      wrapper.innerHTML = '';
+    function loadPreviewImage(src, imageContainer, button, onSuccess, id) {
+      imageContainer.innerHTML = '';
       const status = document.createElement('span');
       status.textContent = 'Suche Vorschau...';
       status.style.color = '#777';
-      wrapper.appendChild(status);
+      imageContainer.appendChild(status);
 
-      let currentIndex = 0;
-      const tryNext = () => {
-        if (currentIndex >= candidates.length) {
-          wrapper.innerHTML = '';
-          const placeholder = document.createElement('span');
-          placeholder.textContent = 'keine Vorschau gefunden';
-          placeholder.style.color = '#777';
-          wrapper.appendChild(placeholder);
-          button.textContent = 'Vorschau laden';
-          button.disabled = false;
-          return;
-        }
-        const src = candidates[currentIndex++];
-        const img = document.createElement('img');
-        img.alt = `Vorschau ${id}`;
-        img.loading = 'lazy';
-        img.onload = () => {
-          wrapper.innerHTML = '';
-          wrapper.appendChild(img);
-          onSuccess();
+      const img = document.createElement('img');
+      img.alt = `Vorschau ${id}`;
+      img.className = 'image-modal-img';
+      img.style.maxWidth = '100%';
+      img.style.maxHeight = '100%';
+      img.style.objectFit = 'contain';
+      img.onload = () => {
+        imageContainer.innerHTML = '';
+        imageContainer.appendChild(img);
+        if (typeof onSuccess === 'function') onSuccess();
+        if (button) {
           button.textContent = 'Vorschau geladen';
           button.disabled = true;
-        };
-        img.onerror = tryNext;
-        img.src = src;
+        }
       };
-      tryNext();
+      img.onerror = () => {
+        imageContainer.innerHTML = '';
+        const placeholder = document.createElement('span');
+        placeholder.textContent = 'Bild konnte nicht geladen werden';
+        placeholder.style.color = '#777';
+        imageContainer.appendChild(placeholder);
+        if (button) {
+          button.textContent = 'Vorschau laden';
+          button.disabled = false;
+        }
+      };
+      img.src = src;
     }
 
-    function loadAllImages(candidates, wrapper, button, id) {
-      wrapper.innerHTML = '';
+    function openImagePopup(imageSources, titleText) {
+      const overlay = document.createElement('div');
+      overlay.className = 'image-modal-overlay';
+      overlay.tabIndex = -1;
+
+      const closePopup = () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        if (overlay.parentNode) {
+          document.body.removeChild(overlay);
+        }
+      };
+
+      function handleKeyDown(event) {
+        if (event.key === 'Escape') {
+          closePopup();
+        }
+      }
+
+      const content = document.createElement('div');
+      content.className = 'image-modal-content';
+
+      const closeButton = document.createElement('button');
+      closeButton.className = 'image-modal-close';
+      closeButton.type = 'button';
+      closeButton.textContent = '✕';
+      closeButton.addEventListener('click', closePopup);
+
+      const title = document.createElement('div');
+      title.className = 'image-modal-title';
+      title.textContent = `Originalbilder für ${titleText}`;
+
+      const gallery = document.createElement('div');
+      gallery.className = 'image-modal-gallery';
+      imageSources.forEach(src => {
+        const img = document.createElement('img');
+        img.className = 'image-modal-img';
+        img.src = src;
+        img.alt = `Originalbild ${titleText}`;
+        gallery.appendChild(img);
+      });
+
+      content.appendChild(closeButton);
+      content.appendChild(title);
+      content.appendChild(gallery);
+      overlay.appendChild(content);
+
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay) {
+          closePopup();
+        }
+      });
+
+      document.body.appendChild(overlay);
+      document.addEventListener('keydown', handleKeyDown);
+      overlay.focus();
+    }
+
+    function openPlantForm(existingRow = null) {
+      const overlay = document.createElement('div');
+      overlay.className = 'image-modal-overlay';
+      overlay.tabIndex = -1;
+
+      const content = document.createElement('div');
+      content.className = 'image-modal-content';
+
+      const closePopup = () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        if (overlay.parentNode) {
+          document.body.removeChild(overlay);
+        }
+      };
+
+      function handleKeyDown(event) {
+        if (event.key === 'Escape') {
+          closePopup();
+        }
+      }
+
+      const nextId = existingRow ? String(existingRow.ID || '') : getNextPlantId(rows);
+      const monthCheckboxes = MONTH_FIELDS.map(month => `<label><input type="checkbox" name="plantMonths" value="${month}" /> ${month}</label>`).join('');
+      const currentPhotos = Array.isArray(existingRow?.__photos) ? existingRow.__photos : [];
+      const currentPhotoList = currentPhotos.length ? `<div class="image-modal-title" style="font-size: 0.95rem; font-weight: 600; margin-top: 0.25rem;">Vorhandene Fotos: ${currentPhotos.map(photo => photo.name || 'Foto').join(', ')}</div>` : '';
+
+      const prefill = field => String(existingRow?.[field] || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const checkedMonth = month => String(existingRow?.[month] || '0').trim() === '1' ? 'checked' : '';
+
+      content.innerHTML = `
+        <button class="image-modal-close" type="button">✕</button>
+        <div class="image-modal-title">${existingRow ? 'Pflanze ändern' : 'Neue Pflanze hinzufügen'}</div>
+        <form class="plant-modal-form" id="plantForm">
+          <div class="plant-modal-grid">
+            <div class="plant-modal-field"><label for="plantId">ID</label><input id="plantId" type="text" value="${nextId}" readonly /></div>
+            <div class="plant-modal-field"><label for="plantNameDe">Name Deutsch</label><input id="plantNameDe" name="plantNameDe" type="text" value="${prefill('Name Deutsch')}" required /></div>
+            <div class="plant-modal-field"><label for="plantNameLatin">Name Latein</label><input id="plantNameLatin" name="plantNameLatin" type="text" value="${prefill('Name Latein')}" required /></div>
+            <div class="plant-modal-field"><label for="plantFamily">Pflanzenfamilie</label><input id="plantFamily" name="plantFamily" type="text" value="${prefill('Pflanzenfamilie')}" required /></div>
+            <div class="plant-modal-field"><label for="plantGrowth">Wuchsform</label><input id="plantGrowth" name="plantGrowth" type="text" value="${prefill('Wuchsform')}" required /></div>
+            <div class="plant-modal-field"><label for="plantColor">Blütenfarbe</label><input id="plantColor" name="plantColor" type="text" value="${prefill('Blütenfarbe')}" required /></div>
+            <div class="plant-modal-field"><label for="plantPlanted">Gepflanzt</label><input id="plantPlanted" name="plantPlanted" type="text" value="${prefill('Gepflanzt')}" /></div>
+          </div>
+          <div class="plant-modal-field">
+            <label>Blütenmonate</label>
+            <div class="plant-modal-months">${MONTH_FIELDS.map(month => `<label><input type="checkbox" name="plantMonths" value="${month}" ${checkedMonth(month)} /> ${month}</label>`).join('')}</div>
+          </div>
+          <div class="plant-modal-field plant-modal-photos">
+            <label for="plantPhotos">Fotos</label>
+            <input id="plantPhotos" type="file" accept="image/*" multiple />
+            <small>Mehrere Bilder kannst du gleichzeitig auswählen.</small>
+            ${currentPhotoList}
+          </div>
+          <div class="plant-modal-actions">
+            <button type="button" id="cancelPlantButton">Abbrechen</button>
+            ${existingRow ? '<button type="button" id="deletePlantButton" class="danger">Pflanze löschen</button>' : ''}
+            <button type="submit">Pflanze speichern</button>
+          </div>
+        </form>
+      `;
+
+      const closeButton = content.querySelector('.image-modal-close');
+      const cancelButton = content.querySelector('#cancelPlantButton');
+      const deleteButton = content.querySelector('#deletePlantButton');
+      const form = content.querySelector('#plantForm');
+      const closeHandlers = [closeButton, cancelButton].filter(Boolean);
+      closeHandlers.forEach(button => button.addEventListener('click', closePopup));
+
+      if (deleteButton && existingRow) {
+        deleteButton.addEventListener('click', () => {
+          const label = existingRow['Name Latein'] || existingRow['Name Deutsch'] || existingRow.ID;
+          const confirmed = window.confirm(`Möchtest du ${label} wirklich löschen?`);
+          if (!confirmed) return;
+          deletePlantById(existingRow.ID);
+          closePopup();
+        });
+      }
+
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const selectedMonths = Array.from(form.querySelectorAll('input[name="plantMonths"]:checked')).map(input => input.value);
+        const photoFiles = Array.from(document.getElementById('plantPhotos').files || []);
+        const uploadedPhotos = await Promise.all(photoFiles.map(async file => ({
+          name: file.name,
+          src: await readFileAsDataUrl(file)
+        })));
+
+        const newRow = {};
+        fieldNames.forEach(name => {
+          newRow[name] = '';
+        });
+        newRow.ID = nextId;
+        newRow['Name Deutsch'] = String(formData.get('plantNameDe') || '').trim();
+        newRow['Name Latein'] = String(formData.get('plantNameLatin') || '').trim();
+        newRow['Pflanzenfamilie'] = String(formData.get('plantFamily') || '').trim();
+        newRow['Wuchsform'] = String(formData.get('plantGrowth') || '').trim();
+        newRow['Blütenfarbe'] = String(formData.get('plantColor') || '').trim();
+        newRow['Gepflanzt'] = String(formData.get('plantPlanted') || '').trim();
+        MONTH_FIELDS.forEach(month => {
+          newRow[month] = selectedMonths.includes(month) ? '1' : '0';
+        });
+
+        const existingPhotos = Array.isArray(existingRow?.__photos) ? existingRow.__photos : [];
+        newRow.__photos = photoFiles.length ? uploadedPhotos : existingPhotos;
+
+        const normalizedRow = normalizeManualPlant(newRow);
+        manualPlants = manualPlants.filter(row => String(row.ID) !== String(nextId));
+        manualPlants.push(normalizedRow);
+        saveManualPlants();
+        deletedPlantIds = deletedPlantIds.filter(id => String(id) !== String(nextId));
+        saveDeletedPlantIds();
+        refreshRows();
+        refreshFilterOptions();
+        closePopup();
+        search();
+      });
+
+      overlay.appendChild(content);
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay) {
+          closePopup();
+        }
+      });
+
+      document.body.appendChild(overlay);
+      document.addEventListener('keydown', handleKeyDown);
+      overlay.focus();
+      const nameInput = content.querySelector('#plantNameDe');
+      if (nameInput) nameInput.focus();
+    }
+
+    function loadAllImages(candidates, imageContainer, button, id) {
+      imageContainer.innerHTML = '';
       const status = document.createElement('span');
       status.textContent = 'Lädt Originale...';
       status.style.color = '#777';
-      wrapper.appendChild(status);
+      imageContainer.appendChild(status);
 
       let loadedCount = 0;
       let pending = candidates.length;
+      if (pending === 0) {
+        imageContainer.innerHTML = '';
+        const placeholder = document.createElement('span');
+        placeholder.textContent = 'keine Originalbilder gefunden';
+        placeholder.style.color = '#777';
+        imageContainer.appendChild(placeholder);
+        return;
+      }
       candidates.forEach(src => {
         const img = document.createElement('img');
         img.alt = `Originalbild ${id}`;
         img.loading = 'lazy';
+        img.className = 'image-modal-img';
         img.onload = () => {
-          if (status.parentNode) wrapper.removeChild(status);
+          if (status.parentNode) imageContainer.removeChild(status);
           loadedCount += 1;
-          wrapper.appendChild(img);
+          imageContainer.appendChild(img);
+          if (button) {
+            button.textContent = 'Originale geladen';
+            button.disabled = true;
+          }
         };
         img.onerror = () => {
           pending -= 1;
           if (pending === 0 && loadedCount === 0) {
-            wrapper.innerHTML = '';
+            imageContainer.innerHTML = '';
             const placeholder = document.createElement('span');
             placeholder.textContent = 'keine Originalbilder gefunden';
             placeholder.style.color = '#777';
-            wrapper.appendChild(placeholder);
-            button.textContent = 'Originale anzeigen';
-            button.disabled = false;
+            imageContainer.appendChild(placeholder);
+            if (button) {
+              button.textContent = 'Originale anzeigen';
+              button.disabled = false;
+            }
           }
         };
         img.src = src;
       });
+    }
+
+    function openEditDialog() {
+      if (!isEditAllowed()) return;
+      const id = window.prompt('Welche ID möchtest du ändern?');
+      if (id === null) return;
+      const row = findRowById(id);
+      if (!row) {
+        window.alert('Keine Pflanze mit dieser ID gefunden.');
+        return;
+      }
+      openPlantForm(row);
     }
 
     function renderTable(filtered) {
@@ -337,20 +887,48 @@
       }
       const table = document.createElement('table');
       const thead = document.createElement('thead');
-      const headerRow = document.createElement('tr');
-      const headers = ['Bild', ...fieldNames];
-      headers.forEach(name => {
+      const monthStartIndex = fieldNames.findIndex(name => MONTH_FIELDS.includes(name));
+      const monthFieldNames = MONTH_FIELDS.filter(name => fieldNames.includes(name));
+      const firstHeaderRow = document.createElement('tr');
+      const secondHeaderRow = document.createElement('tr');
+
+      const addRowSpanHeader = name => {
         const th = document.createElement('th');
         th.textContent = name;
-        headerRow.appendChild(th);
+        th.rowSpan = 2;
+        firstHeaderRow.appendChild(th);
+      };
+
+      addRowSpanHeader('Bild');
+
+      fieldNames.slice(0, monthStartIndex).forEach(name => {
+        addRowSpanHeader(name);
       });
-      thead.appendChild(headerRow);
+
+      const monthGroupHeader = document.createElement('th');
+      monthGroupHeader.textContent = 'Blütenmonate';
+      monthGroupHeader.colSpan = monthFieldNames.length;
+      monthGroupHeader.style.textAlign = 'center';
+      firstHeaderRow.appendChild(monthGroupHeader);
+
+      fieldNames.slice(monthStartIndex + monthFieldNames.length).forEach(name => {
+        addRowSpanHeader(name);
+      });
+
+      monthFieldNames.forEach(name => {
+        const th = document.createElement('th');
+        th.textContent = name;
+        secondHeaderRow.appendChild(th);
+      });
+
+      thead.appendChild(firstHeaderRow);
+      thead.appendChild(secondHeaderRow);
       table.appendChild(thead);
 
       const tbody = document.createElement('tbody');
       filtered.forEach(row => {
         const tr = document.createElement('tr');
-        tr.appendChild(renderImageCell(row.ID));
+        tr.appendChild(renderImageCell(row));
         fieldNames.forEach(name => {
           const td = document.createElement('td');
           td.textContent = row[name] || '';
@@ -359,8 +937,11 @@
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'table-scroll';
+      wrapper.appendChild(table);
       result.innerHTML = '';
-      result.appendChild(table);
+      result.appendChild(wrapper);
     }
 
     function matchesFilter(value, selected) {
@@ -371,9 +952,11 @@
     function resetFilters() {
       document.getElementById('query').value = '';
       const monthSelect = document.getElementById('field-month');
-      monthSelect.querySelectorAll('option').forEach(option => {
-        option.selected = option.value === 'all';
-      });
+      if (monthSelect) {
+        monthSelect.querySelectorAll('option').forEach(option => {
+          option.selected = option.value === 'all';
+        });
+      }
       Object.keys(FIELD_MAP).forEach(id => {
         const select = document.getElementById(id);
         if (select) select.value = 'all';
@@ -385,7 +968,7 @@
     function search() {
       const query = document.getElementById('query').value.trim().toLowerCase();
       const monthSelect = document.getElementById('field-month');
-      const selectedMonths = Array.from(monthSelect.selectedOptions).map(option => option.value);
+      const selectedMonths = monthSelect ? Array.from(monthSelect.selectedOptions).map(option => option.value) : ['all'];
       const months = selectedMonths.includes('all') || selectedMonths.length === 0 ? ['all'] : selectedMonths;
       const filters = {};
       Object.keys(FIELD_MAP).forEach(id => {
@@ -417,18 +1000,26 @@
         if (!response.ok) throw new Error('CSV-Datei konnte nicht geladen werden.');
         const text = await response.text();
         const parsed = parseCsv(text);
-        fieldNames = parsed.header;
-        rows = parsed.data;
+        fieldNames = parsed.header.filter(name => name && name !== 'Notizen');
+        baseRows = parsed.data;
+        manualPlants = loadManualPlants();
+        deletedPlantIds = loadDeletedPlantIds();
+        refreshRows();
+
+        try {
+          const imageResponse = await fetch(IMAGE_INDEX_FILE);
+          if (imageResponse.ok) {
+            imageIndex = await imageResponse.json();
+          } else {
+            console.warn(`Bildindex konnte nicht geladen werden: ${imageResponse.status}`);
+          }
+        } catch (error) {
+          console.warn('Bildindex konnte nicht geladen werden:', error);
+        }
+
         status.textContent = `Daten geladen: ${rows.length} Zeile(n)`;
 
-        Object.keys(FIELD_MAP).forEach(id => fillDropdown(id, uniqueValues(FIELD_MAP[id])));
-        const suggestionSet = new Set();
-        rows.forEach(row => {
-          Object.values(row).forEach(value => {
-            if (value) suggestionSet.add(value.trim());
-          });
-        });
-        suggestionValues = Array.from(suggestionSet).sort((a, b) => a.localeCompare(b, 'de'));
+        refreshFilterOptions();
 
         const queryInput = document.getElementById('query');
         if (queryInput) {
@@ -440,7 +1031,6 @@
             renderQuerySuggestions(event.target.value || '');
           });
         }
-
         const searchInputs = ['field-name-de', 'field-name-latin', 'field-family', 'field-growth', 'field-color', 'field-planted'];
         searchInputs.forEach(id => {
           const element = document.getElementById(id);
@@ -448,8 +1038,13 @@
           element.addEventListener('input', search);
           element.addEventListener('change', search);
         });
+
         const monthSelect = document.getElementById('field-month');
         if (monthSelect) {
+          monthSelect.classList.add('compact');
+          monthSelect.addEventListener('click', () => {
+            monthSelect.size = monthSelect.size === 1 ? 12 : 1;
+          });
           monthSelect.addEventListener('mousedown', event => {
             if (event.target.tagName !== 'OPTION') return;
             event.preventDefault();
@@ -469,6 +1064,7 @@
             }
             search();
           });
+          monthSelect.addEventListener('change', search);
         }
 
         document.addEventListener('click', event => {
@@ -481,6 +1077,22 @@
           event.preventDefault();
           resetFilters();
         });
+        document.getElementById('addPlantButton').addEventListener('click', event => {
+          event.preventDefault();
+          openPlantForm();
+        });
+        const editPlantButton = document.createElement('button');
+        editPlantButton.type = 'button';
+        editPlantButton.id = 'editPlantButton';
+        editPlantButton.textContent = 'Pflanzen ändern';
+        editPlantButton.addEventListener('click', event => {
+          event.preventDefault();
+          openEditDialog();
+        });
+        const pageActions = document.querySelector('.page-actions');
+        if (pageActions) {
+          pageActions.insertBefore(editPlantButton, document.getElementById('resetButton'));
+        }
         renderTable(rows);
       } catch (error) {
         status.innerHTML = '<span class="error">Fehler: ' + error.message + '</span>';

@@ -44,6 +44,10 @@ Die Oberfläche bietet Dropdown-Felder für:
 
 Du kannst zusätzlich einen Freitext in allen Spalten suchen.
 
+### Neue Pflanzen hinzufügen
+
+Oben in der Weboberfläche gibt es den Button **Neue Pflanze hinzufügen**. Damit kannst du neue Pflanzen samt Fotos direkt im Browser erfassen; die Einträge werden lokal im Browser gespeichert.
+
 ### Bilder für die Webseite
 
 Wenn du Pflanzenbilder hinzufügen möchtest, lege sie in einem Ordner `images/` ab. Die Seite sucht nach Dateien im Format:
