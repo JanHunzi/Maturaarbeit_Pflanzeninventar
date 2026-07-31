@@ -103,8 +103,8 @@
     };
     const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     const IMAGE_BASE_PATH = 'images';
-    const IMAGE_EXTENSIONS = ['jpg','jpeg','png','webp'];
-    const MAX_IMAGE_VARIANTS = 8;
+    const IMAGE_EXTENSIONS = ['webp','jpg','jpeg','png'];
+    const MAX_IMAGE_VARIANTS = 12;
     let rows = [];
     let fieldNames = [];
     let suggestionValues = [];
@@ -183,27 +183,33 @@
       return String(id).padStart(3, '0');
     }
 
-    function getImageCandidates(id) {
+    function getImageCandidates(id, type = 'original') {
       const rawId = String(id || '').trim();
       if (!rawId) return [];
       const padded = padId(rawId);
-      const prefixes = [
-        `PF-${padded}`,
-        `PF${padded}`,
-        `PF-${rawId}`,
-        `PF${rawId}`,
-        padded,
-        rawId
-      ];
       const candidates = [];
-      prefixes.forEach(prefix => {
-        IMAGE_EXTENSIONS.forEach(ext => candidates.push(`${IMAGE_BASE_PATH}/${prefix}.${ext}`));
+      const baseName = `PF-${padded}`;
+
+      if (type === 'preview') {
+        IMAGE_EXTENSIONS.forEach(ext => {
+          candidates.push(`${IMAGE_BASE_PATH}/${baseName}_web.${ext}`);
+        });
         for (let index = 1; index <= MAX_IMAGE_VARIANTS; index += 1) {
-          IMAGE_EXTENSIONS.forEach(ext => candidates.push(`${IMAGE_BASE_PATH}/${prefix}.${index}.${ext}`));
+          IMAGE_EXTENSIONS.forEach(ext => {
+            candidates.push(`${IMAGE_BASE_PATH}/${baseName}.${index}_web.${ext}`);
+          });
         }
-      });
-      const uppercaseCandidates = candidates.map(candidate => candidate.replace(/\.(jpg|jpeg|png|webp)$/i, match => match.toUpperCase()));
-      return Array.from(new Set([...candidates, ...uppercaseCandidates]));
+      } else {
+        IMAGE_EXTENSIONS.forEach(ext => {
+          candidates.push(`${IMAGE_BASE_PATH}/${baseName}.${ext}`);
+        });
+        for (let index = 1; index <= MAX_IMAGE_VARIANTS; index += 1) {
+          IMAGE_EXTENSIONS.forEach(ext => {
+            candidates.push(`${IMAGE_BASE_PATH}/${baseName}.${index}.${ext}`);
+          });
+        }
+      }
+      return Array.from(new Set(candidates));
     }
 
     function renderImageCell(id) {
@@ -220,48 +226,107 @@
         return cell;
       }
 
-      const candidates = getImageCandidates(id);
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = 'Bild laden';
-      button.addEventListener('click', () => {
-        button.disabled = true;
-        button.textContent = 'Lädt...';
-        loadImageCandidates(candidates, wrapper, button, id);
+      const previewCandidates = getImageCandidates(id, 'preview');
+      const originalCandidates = getImageCandidates(id, 'original');
+
+      const previewButton = document.createElement('button');
+      previewButton.type = 'button';
+      previewButton.textContent = 'Vorschau laden';
+
+      const originalButton = document.createElement('button');
+      originalButton.type = 'button';
+      originalButton.textContent = 'Originale anzeigen';
+      originalButton.disabled = true;
+      originalButton.style.marginLeft = '0.5rem';
+
+      previewButton.addEventListener('click', () => {
+        previewButton.disabled = true;
+        previewButton.textContent = 'Vorschau lädt...';
+        loadFirstSuccessfulImage(previewCandidates, wrapper, previewButton, () => {
+          originalButton.disabled = false;
+        }, id);
       });
-      wrapper.appendChild(button);
+
+      originalButton.addEventListener('click', () => {
+        originalButton.disabled = true;
+        originalButton.textContent = 'Originale laden...';
+        loadAllImages(originalCandidates, wrapper, originalButton, id);
+      });
+
+      wrapper.appendChild(previewButton);
+      wrapper.appendChild(originalButton);
       cell.appendChild(wrapper);
       return cell;
     }
 
-    function loadImageCandidates(candidates, wrapper, button, id) {
-      const placeholder = document.createElement('span');
-      placeholder.textContent = 'kein Bild gefunden';
-      placeholder.style.color = '#777';
+    function loadFirstSuccessfulImage(candidates, wrapper, button, onSuccess, id) {
+      wrapper.innerHTML = '';
+      const status = document.createElement('span');
+      status.textContent = 'Suche Vorschau...';
+      status.style.color = '#777';
+      wrapper.appendChild(status);
 
       let currentIndex = 0;
       const tryNext = () => {
         if (currentIndex >= candidates.length) {
           wrapper.innerHTML = '';
+          const placeholder = document.createElement('span');
+          placeholder.textContent = 'keine Vorschau gefunden';
+          placeholder.style.color = '#777';
           wrapper.appendChild(placeholder);
+          button.textContent = 'Vorschau laden';
+          button.disabled = false;
           return;
         }
-
         const src = candidates[currentIndex++];
         const img = document.createElement('img');
-        img.alt = `Pflanzenbild ${id}`;
-        img.src = src;
+        img.alt = `Vorschau ${id}`;
+        img.loading = 'lazy';
         img.onload = () => {
           wrapper.innerHTML = '';
           wrapper.appendChild(img);
+          onSuccess();
+          button.textContent = 'Vorschau geladen';
+          button.disabled = true;
+        };
+        img.onerror = tryNext;
+        img.src = src;
+      };
+      tryNext();
+    }
+
+    function loadAllImages(candidates, wrapper, button, id) {
+      wrapper.innerHTML = '';
+      const status = document.createElement('span');
+      status.textContent = 'Lädt Originale...';
+      status.style.color = '#777';
+      wrapper.appendChild(status);
+
+      let loadedCount = 0;
+      let pending = candidates.length;
+      candidates.forEach(src => {
+        const img = document.createElement('img');
+        img.alt = `Originalbild ${id}`;
+        img.loading = 'lazy';
+        img.onload = () => {
+          if (status.parentNode) wrapper.removeChild(status);
+          loadedCount += 1;
+          wrapper.appendChild(img);
         };
         img.onerror = () => {
-          tryNext();
+          pending -= 1;
+          if (pending === 0 && loadedCount === 0) {
+            wrapper.innerHTML = '';
+            const placeholder = document.createElement('span');
+            placeholder.textContent = 'keine Originalbilder gefunden';
+            placeholder.style.color = '#777';
+            wrapper.appendChild(placeholder);
+            button.textContent = 'Originale anzeigen';
+            button.disabled = false;
+          }
         };
-      };
-
-      wrapper.innerHTML = '';
-      tryNext();
+        img.src = src;
+      });
     }
 
     function renderTable(filtered) {
