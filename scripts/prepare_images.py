@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-import os
+import re
 import shutil
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,7 +31,14 @@ def ensure_output_dir():
     OUTPUT_DIR.mkdir(exist_ok=True)
 
 
-def copy_images(ids):
+def extract_id_from_filename(path):
+    match = re.search(r'(?i)pf[-_]?0*(\d+)', path.name)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
+def sync_images(ids):
     if not INPUT_DIR.exists():
         raise SystemExit(f'Ordner nicht gefunden: {INPUT_DIR}')
 
@@ -41,25 +47,28 @@ def copy_images(ids):
     if not image_files:
         raise SystemExit(f'Keine unterstützten Bilddateien gefunden in {INPUT_DIR}')
 
-    for index, image_file in enumerate(image_files[:len(ids)], start=1):
-        plant_id = ids[index - 1]
-        stem = Path(image_file.name)
-        ext = stem.suffix
-        target_name = f'PF-{int(plant_id):03d}{ext}'
+    for plant_id in ids:
+        numeric_id = int(plant_id)
+        matches = [image_file for image_file in image_files if extract_id_from_filename(image_file) == numeric_id]
+        if not matches:
+            print(f'Kein Bild gefunden für ID {numeric_id}')
+            continue
+
+        source = matches[0]
+        target_name = f'PF-{numeric_id:03d}{source.suffix}'
         target = OUTPUT_DIR / target_name
-        if image_file.name != target_name:
-            if target.exists():
-                print(f'Vorhanden: {target.name}')
-            else:
-                shutil.copy2(image_file, target)
-                print(f'Kopiert: {image_file.name} -> {target.name}')
+        if target.exists() and target.resolve() == source.resolve():
+            print(f'Bereit: {target.name}')
+        elif target.exists():
+            print(f'Vorhanden: {target.name}')
         else:
-            print(f'Bereit: {image_file.name}')
+            shutil.copy2(source, target)
+            print(f'Kopiert: {source.name} -> {target.name}')
 
 
 if __name__ == '__main__':
     ensure_output_dir()
     ids = read_ids()
     print(f'{len(ids)} Pflanzen-IDs gefunden.')
-    copy_images(ids)
-    print('Fertig. Bilder liegen jetzt im Ordner images/.')
+    sync_images(ids)
+    print('Fertig. Bilder liegen jetzt im Ordner Images/.')
