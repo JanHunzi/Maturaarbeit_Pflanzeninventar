@@ -12,8 +12,25 @@
     .toolbar label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .page-actions { display: flex; gap: 0.75rem; margin: 0.75rem 0 1rem; flex-wrap: wrap; }
     .page-actions button { flex: 1 1 220px; }
+    .page-actions .secondary-action {
+      background: #fff;
+      color: #2d3a4a;
+      border: 1px solid #bcc6d1;
+    }
+    .page-actions .secondary-action:hover {
+      background: #f5f8fb;
+      border-color: #a7b4c2;
+    }
     .autocomplete-wrapper { position: relative; }
     .suggestions { position: absolute; top: calc(100% + 0.25rem); left: 0; right: 0; background: #fff; border: 1px solid #bbb; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-height: 240px; overflow-y: auto; z-index: 10; display: none; }
+    .toolbar .toolbar-reset {
+      background: #fff;
+      color: #2d3a4a;
+      border: 1px solid #bbb;
+    }
+    .toolbar .toolbar-reset:hover {
+      background: #f7f9fc;
+    }
     select[multiple] { height: auto; }
     select[multiple][size="1"] { height: auto; }
     select[multiple].compact { min-height: 2.7rem; }
@@ -151,23 +168,25 @@
 
       <div class="toolbar">
         <div>
-          <label for="query">Freitext</label>
+          <label for="field-name-de">Name Deutsch</label>
           <div class="autocomplete-wrapper">
-            <input id="query" type="text" placeholder="z. B. Wasser, Salvia, gelb" autocomplete="off" />
-            <div id="querySuggestions" class="suggestions"></div>
+            <input id="field-name-de" type="text" placeholder="Name Deutsch suchen" autocomplete="off" />
+            <div id="field-name-de-suggestions" class="suggestions"></div>
           </div>
         </div>
         <div>
-          <label for="field-name-de">Name Deutsch</label>
-          <select id="field-name-de"><option value="all">Alle</option></select>
-        </div>
-        <div>
           <label for="field-name-latin">Name Latein</label>
-          <select id="field-name-latin"><option value="all">Alle</option></select>
+          <div class="autocomplete-wrapper">
+            <input id="field-name-latin" type="text" placeholder="Name Latein suchen" autocomplete="off" />
+            <div id="field-name-latin-suggestions" class="suggestions"></div>
+          </div>
         </div>
         <div>
           <label for="field-family">Pflanzenfamilie</label>
-          <select id="field-family"><option value="all">Alle</option></select>
+          <div class="autocomplete-wrapper">
+            <input id="field-family" type="text" placeholder="Pflanzenfamilie suchen" autocomplete="off" />
+            <div id="field-family-suggestions" class="suggestions"></div>
+          </div>
         </div>
         <div>
           <label for="field-growth">Wuchsform</label>
@@ -199,11 +218,14 @@
             <option>Dez</option>
           </select>
         </div>
+        <div>
+          <label for="resetButton">Suche</label>
+          <button id="resetButton" class="toolbar-reset" type="button">Suche zurücksetzen</button>
+        </div>
       </div>
 
     <div class="page-actions">
       <button id="addPlantButton" type="button">Neue Pflanze hinzufügen</button>
-      <button id="resetButton" type="button">Zurücksetzen</button>
     </div>
     <div class="footer" id="status">Lade Daten...</div>
 
@@ -212,14 +234,17 @@
 
   <script>
     const CSV_FILE = 'Pflanzenliste_Maturaarbeit_DBV2.0_cvs.csv';
-    const FIELD_MAP = {
+    const AUTOCOMPLETE_FIELD_MAP = {
       'field-name-de': 'Name Deutsch',
       'field-name-latin': 'Name Latein',
-      'field-family': 'Pflanzenfamilie',
+      'field-family': 'Pflanzenfamilie'
+    };
+    const SELECT_FIELD_MAP = {
       'field-growth': 'Wuchsform',
       'field-color': 'Blütenfarbe',
       'field-planted': 'Gepflanzt'
     };
+    const FIELD_MAP = { ...AUTOCOMPLETE_FIELD_MAP, ...SELECT_FIELD_MAP };
     const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     const IMAGE_BASE_PATH = 'images';
     const IMAGE_INDEX_FILE = 'images/image_index.json';
@@ -233,7 +258,11 @@
     let rows = [];
     let baseRows = [];
     let fieldNames = [];
-    let suggestionValues = [];
+    let fieldSuggestionValues = {
+      'field-name-de': [],
+      'field-name-latin': [],
+      'field-family': []
+    };
     let imageIndex = {};
     let manualPlants = [];
     let deletedPlantIds = [];
@@ -372,16 +401,16 @@
 
     function refreshFilterOptions() {
       const currentValues = {};
-      Object.keys(FIELD_MAP).forEach(id => {
+      Object.keys(SELECT_FIELD_MAP).forEach(id => {
         const select = document.getElementById(id);
         currentValues[id] = select ? select.value : 'all';
       });
 
-      Object.keys(FIELD_MAP).forEach(id => {
+      Object.keys(SELECT_FIELD_MAP).forEach(id => {
         const select = document.getElementById(id);
         if (!select) return;
         select.innerHTML = '<option value="all">Alle</option>';
-        uniqueValues(FIELD_MAP[id]).forEach(value => {
+        uniqueValues(SELECT_FIELD_MAP[id]).forEach(value => {
           const option = document.createElement('option');
           option.value = value;
           option.textContent = value;
@@ -392,14 +421,62 @@
         }
       });
 
-      const suggestionSet = new Set();
-      rows.forEach(row => {
-        fieldNames.forEach(field => {
-          const value = row[field];
-          if (value) suggestionSet.add(String(value).trim());
+      Object.entries(AUTOCOMPLETE_FIELD_MAP).forEach(([id, field]) => {
+        fieldSuggestionValues[id] = uniqueValues(field);
+      });
+
+    }
+
+    function startsWithWord(value, query) {
+      const normalizedValue = String(value || '').trim().toLowerCase();
+      const normalizedQuery = String(query || '').trim().toLowerCase();
+      if (!normalizedQuery) return true;
+      if (!normalizedValue) return false;
+      if (normalizedValue.startsWith(normalizedQuery)) return true;
+      return normalizedValue
+        .split(/[\s\-\/(),.;:]+/)
+        .some(part => part.startsWith(normalizedQuery));
+    }
+
+    function renderFieldSuggestions(fieldId, query = '', showAll = false) {
+      const input = document.getElementById(fieldId);
+      const box = document.getElementById(`${fieldId}-suggestions`);
+      if (!input || !box) return;
+
+      const values = fieldSuggestionValues[fieldId] || [];
+      const normalized = String(query || '').trim().toLowerCase();
+      const matches = showAll || !normalized
+        ? values
+        : values.filter(value => startsWithWord(value, normalized));
+
+      if (!matches.length) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+      }
+
+      box.innerHTML = matches.map(value => `<div class="suggestion-item">${value}</div>`).join('');
+      box.style.display = 'block';
+
+      box.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('mousedown', event => {
+          event.preventDefault();
+          input.value = item.textContent || '';
+          box.style.display = 'none';
+          search();
         });
       });
-      suggestionValues = Array.from(suggestionSet).sort((a, b) => a.localeCompare(b, 'de'));
+    }
+
+    function hideFieldSuggestions(fieldId) {
+      const box = document.getElementById(`${fieldId}-suggestions`);
+      if (box) {
+        box.style.display = 'none';
+      }
+    }
+
+    function hideAllFieldSuggestions() {
+      Object.keys(AUTOCOMPLETE_FIELD_MAP).forEach(hideFieldSuggestions);
     }
 
     function isEditAllowed() {
@@ -445,41 +522,6 @@
         option.textContent = value;
         select.appendChild(option);
       });
-    }
-
-    function renderQuerySuggestions(query) {
-      const box = document.getElementById('querySuggestions');
-      if (!box) return;
-      const normalized = query.trim().toLowerCase();
-      if (!normalized) {
-        box.style.display = 'none';
-        box.innerHTML = '';
-        return;
-      }
-      const matches = suggestionValues.filter(value => value.toLowerCase().includes(normalized)).slice(0, 8);
-      if (!matches.length) {
-        box.style.display = 'none';
-        box.innerHTML = '';
-        return;
-      }
-      box.innerHTML = matches.map(value => `<div class="suggestion-item">${value}</div>`).join('');
-      box.style.display = 'block';
-      box.querySelectorAll('.suggestion-item').forEach(item => {
-        item.addEventListener('mousedown', event => {
-          event.preventDefault();
-          const value = item.textContent;
-          document.getElementById('query').value = value;
-          box.style.display = 'none';
-          search();
-        });
-      });
-    }
-
-    function hideQuerySuggestions() {
-      const box = document.getElementById('querySuggestions');
-      if (box) {
-        box.style.display = 'none';
-      }
     }
 
     function padId(id) {
@@ -879,6 +921,28 @@
       openPlantForm(row);
     }
 
+    function formatBloomRange(row) {
+      const activeMonths = MONTH_FIELDS.filter(month => String(row[month] || '').trim() === '1');
+      if (!activeMonths.length) return '';
+      if (activeMonths.length === 1) return activeMonths[0];
+      return `${activeMonths[0]} - ${activeMonths[activeMonths.length - 1]}`;
+    }
+
+    function hasDisplayImages(row) {
+      const hasIndexedImages = getImageFilesForId(row?.ID || '').length > 0;
+      const hasManualPhotos = Array.isArray(row?.__photos) && row.__photos.some(photo => photo?.src);
+      return hasIndexedImages || hasManualPhotos;
+    }
+
+    function sortRowsForDisplay(rowsToSort) {
+      return [...rowsToSort].sort((a, b) => {
+        const aHasImages = hasDisplayImages(a) ? 1 : 0;
+        const bHasImages = hasDisplayImages(b) ? 1 : 0;
+        if (aHasImages === bHasImages) return 0;
+        return aHasImages - bHasImages;
+      });
+    }
+
     function renderTable(filtered) {
       const result = document.getElementById('result');
       if (!filtered.length) {
@@ -887,51 +951,31 @@
       }
       const table = document.createElement('table');
       const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
       const monthStartIndex = fieldNames.findIndex(name => MONTH_FIELDS.includes(name));
-      const monthFieldNames = MONTH_FIELDS.filter(name => fieldNames.includes(name));
-      const firstHeaderRow = document.createElement('tr');
-      const secondHeaderRow = document.createElement('tr');
+      const monthInsertIndex = monthStartIndex >= 0 ? monthStartIndex : fieldNames.length;
+      const visibleFields = fieldNames.filter(name => !MONTH_FIELDS.includes(name));
+      const fieldsWithBloomRange = [...visibleFields];
+      fieldsWithBloomRange.splice(monthInsertIndex, 0, 'Blütenmonate');
 
-      const addRowSpanHeader = name => {
+      const headers = ['Bild', ...fieldsWithBloomRange];
+      headers.forEach(name => {
         const th = document.createElement('th');
         th.textContent = name;
-        th.rowSpan = 2;
-        firstHeaderRow.appendChild(th);
-      };
-
-      addRowSpanHeader('Bild');
-
-      fieldNames.slice(0, monthStartIndex).forEach(name => {
-        addRowSpanHeader(name);
+        headerRow.appendChild(th);
       });
 
-      const monthGroupHeader = document.createElement('th');
-      monthGroupHeader.textContent = 'Blütenmonate';
-      monthGroupHeader.colSpan = monthFieldNames.length;
-      monthGroupHeader.style.textAlign = 'center';
-      firstHeaderRow.appendChild(monthGroupHeader);
-
-      fieldNames.slice(monthStartIndex + monthFieldNames.length).forEach(name => {
-        addRowSpanHeader(name);
-      });
-
-      monthFieldNames.forEach(name => {
-        const th = document.createElement('th');
-        th.textContent = name;
-        secondHeaderRow.appendChild(th);
-      });
-
-      thead.appendChild(firstHeaderRow);
-      thead.appendChild(secondHeaderRow);
+      thead.appendChild(headerRow);
       table.appendChild(thead);
 
       const tbody = document.createElement('tbody');
-      filtered.forEach(row => {
+      const displayRows = sortRowsForDisplay(filtered);
+      displayRows.forEach(row => {
         const tr = document.createElement('tr');
         tr.appendChild(renderImageCell(row));
-        fieldNames.forEach(name => {
+        fieldsWithBloomRange.forEach(name => {
           const td = document.createElement('td');
-          td.textContent = row[name] || '';
+          td.textContent = name === 'Blütenmonate' ? formatBloomRange(row) : (row[name] || '');
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -950,37 +994,45 @@
     }
 
     function resetFilters() {
-      document.getElementById('query').value = '';
+      Object.keys(AUTOCOMPLETE_FIELD_MAP).forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = '';
+      });
       const monthSelect = document.getElementById('field-month');
       if (monthSelect) {
         monthSelect.querySelectorAll('option').forEach(option => {
           option.selected = option.value === 'all';
         });
       }
-      Object.keys(FIELD_MAP).forEach(id => {
+      Object.keys(SELECT_FIELD_MAP).forEach(id => {
         const select = document.getElementById(id);
         if (select) select.value = 'all';
       });
+      hideAllFieldSuggestions();
       document.getElementById('status').textContent = `Daten geladen: ${rows.length} Zeile(n)`;
       renderTable(rows);
     }
 
     function search() {
-      const query = document.getElementById('query').value.trim().toLowerCase();
       const monthSelect = document.getElementById('field-month');
       const selectedMonths = monthSelect ? Array.from(monthSelect.selectedOptions).map(option => option.value) : ['all'];
       const months = selectedMonths.includes('all') || selectedMonths.length === 0 ? ['all'] : selectedMonths;
-      const filters = {};
-      Object.keys(FIELD_MAP).forEach(id => {
-        filters[FIELD_MAP[id]] = document.getElementById(id).value;
+      const textFilters = {};
+      Object.keys(AUTOCOMPLETE_FIELD_MAP).forEach(id => {
+        textFilters[AUTOCOMPLETE_FIELD_MAP[id]] = String(document.getElementById(id)?.value || '').trim().toLowerCase();
+      });
+      const selectFilters = {};
+      Object.keys(SELECT_FIELD_MAP).forEach(id => {
+        selectFilters[SELECT_FIELD_MAP[id]] = document.getElementById(id).value;
       });
 
       const filtered = rows.filter(row => {
-        if (query) {
-          const text = Object.values(row).join(' ').toLowerCase();
-          if (!text.includes(query)) return false;
+        for (const [field, selectedText] of Object.entries(textFilters)) {
+          if (!selectedText) continue;
+          const value = String(row[field] || '').toLowerCase();
+          if (!startsWithWord(value, selectedText)) return false;
         }
-        for (const [field, selected] of Object.entries(filters)) {
+        for (const [field, selected] of Object.entries(selectFilters)) {
           if (!matchesFilter(row[field], selected)) return false;
         }
         if (months[0] !== 'all') {
@@ -1021,17 +1073,19 @@
 
         refreshFilterOptions();
 
-        const queryInput = document.getElementById('query');
-        if (queryInput) {
-          queryInput.addEventListener('input', event => {
+        Object.keys(AUTOCOMPLETE_FIELD_MAP).forEach(id => {
+          const input = document.getElementById(id);
+          if (!input) return;
+          input.addEventListener('input', event => {
             search();
-            renderQuerySuggestions(event.target.value || '');
+            renderFieldSuggestions(id, event.target.value || '', false);
           });
-          queryInput.addEventListener('focus', event => {
-            renderQuerySuggestions(event.target.value || '');
+          input.addEventListener('focus', () => {
+            renderFieldSuggestions(id, '', true);
           });
-        }
-        const searchInputs = ['field-name-de', 'field-name-latin', 'field-family', 'field-growth', 'field-color', 'field-planted'];
+        });
+
+        const searchInputs = ['field-growth', 'field-color', 'field-planted'];
         searchInputs.forEach(id => {
           const element = document.getElementById(id);
           if (!element) return;
@@ -1068,9 +1122,8 @@
         }
 
         document.addEventListener('click', event => {
-          const wrapper = document.querySelector('.autocomplete-wrapper');
-          if (!wrapper || wrapper.contains(event.target)) return;
-          hideQuerySuggestions();
+          if (event.target.closest('.autocomplete-wrapper')) return;
+          hideAllFieldSuggestions();
         });
 
         document.getElementById('resetButton').addEventListener('click', event => {
@@ -1091,7 +1144,7 @@
         });
         const pageActions = document.querySelector('.page-actions');
         if (pageActions) {
-          pageActions.insertBefore(editPlantButton, document.getElementById('resetButton'));
+          pageActions.appendChild(editPlantButton);
         }
         renderTable(rows);
       } catch (error) {
