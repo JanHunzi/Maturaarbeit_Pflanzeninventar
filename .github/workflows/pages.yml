@@ -17,6 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Bilder-Index neu aufbauen
+        run: python3 scripts/build_image_index.py
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v1
         with:
