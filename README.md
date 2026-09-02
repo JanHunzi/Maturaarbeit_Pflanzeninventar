@@ -59,6 +59,27 @@ Wenn du Pflanzenbilder hinzufügen möchtest, lege sie in einem Ordner `images/`
 
 Die Nummer entspricht der `ID` der Pflanze aus der CSV-Datei.
 
+Welche Bilder tatsächlich angezeigt werden, steht in `images/image_index.json`.
+Diese Datei wird nicht von Hand gepflegt, sondern mit
+
+```
+python3 scripts/build_image_index.py
+```
+
+aus dem Inhalt von `images/` neu erzeugt. Das Skript ordnet Dateien robust
+ihrer Pflanzen-ID zu: Gross-/Kleinschreibung, das Trennzeichen zwischen `PF`
+und der Nummer (`-`, `_`, Leerzeichen oder keins), führende Nullen sowie
+Umlaute/Akzente im restlichen Dateinamen spielen keine Rolle. Unterstützt
+werden die Endungen `.jpg`, `.jpeg`, `.png` und `.webp`. Dateien ohne
+erkennbare `PF-<Nummer>`-ID (z.B. Referenzbilder wie `Z.1_web.webp`) werden
+übersprungen. Führt eine Pflanze zu keinem passenden Bild, zeigt die
+Weboberfläche stattdessen den Hinweis „kein Bild vorhanden“ an, statt einen
+Fehler zu verursachen.
+
+Beim Deployment auf GitHub Pages (`.github/workflows/pages.yml`) wird dieses
+Skript automatisch vor dem Veröffentlichen ausgeführt, damit der Index nie
+veraltet.
+
 ### Externen Zugriff ermöglichen
 
 1. Wenn du in einer lokalen Umgebung arbeitest, musst du sicherstellen, dass Port 8000 vom Netzwerk zugänglich ist.
