@@ -7,7 +7,36 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; line-height: 1.5; box-sizing: border-box; }
     .container { width: min(100%, 1400px); margin: 0 auto; }
-    h1 { margin-bottom: 0.5rem; }
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    h1 { margin: 0; }
+    .edit-entry-button {
+      width: 4rem;
+      min-width: 4rem;
+      height: 4rem;
+      padding: 0.65rem;
+      border: 2px solid #111;
+      border-radius: 1rem;
+      background: #fff;
+      color: #111;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    .edit-entry-button:hover {
+      background: #f5f5f5;
+    }
+    .edit-entry-button svg {
+      width: 2rem;
+      height: 2rem;
+      stroke: currentColor;
+    }
     .toolbar { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem; }
     .toolbar label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .page-actions { display: flex; gap: 0.75rem; margin: 0.75rem 0 1rem; flex-wrap: wrap; }
@@ -143,8 +172,22 @@
     .plant-modal-actions .danger:hover {
       background: #a61d1d;
     }
+    .management-popup-actions {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .management-popup-actions button {
+      background: #fff;
+      color: #222;
+      border: 1px solid #c6ced8;
+    }
+    .management-popup-actions button:hover {
+      background: #f5f8fb;
+    }
     @media (max-width: 900px) {
       body { padding: 0.75rem; }
+      .page-header { align-items: center; }
       .toolbar { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
       .page-actions { flex-direction: column; }
       .page-actions button { flex: 1 1 auto; }
@@ -153,7 +196,14 @@
     }
     @media (max-width: 600px) {
       body { padding: 0.5rem; }
+      .page-header { align-items: flex-start; }
       h1 { font-size: 1.4rem; }
+      .edit-entry-button {
+        width: 3.5rem;
+        min-width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 0.9rem;
+      }
       .toolbar { grid-template-columns: 1fr; }
       .image-cell { gap: 0.25rem; }
       .image-modal-content { padding: 0.85rem; }
@@ -164,7 +214,17 @@
 </head>
 <body>
   <div class="container">
-    <h1>Pflanzeninventar</h1>
+    <div class="page-header">
+      <h1>Pflanzeninventar</h1>
+      <button id="editEntryButton" class="edit-entry-button" type="button" aria-label="Bearbeiten" title="Bearbeiten">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 20h4l10.5-10.5a2.121 2.121 0 0 0-3-3L5 17v3z"></path>
+          <path d="M13.5 6.5l4 4"></path>
+          <path d="M4 4h7"></path>
+          <path d="M4 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"></path>
+        </svg>
+      </button>
+    </div>
 
       <div class="toolbar">
         <div>
@@ -224,9 +284,6 @@
         </div>
       </div>
 
-    <div class="page-actions">
-      <button id="addPlantButton" type="button">Neue Pflanze hinzufügen</button>
-    </div>
     <div class="footer" id="status">Lade Daten...</div>
 
     <div id="result"></div>
@@ -249,7 +306,7 @@
     const IMAGE_BASE_PATH = 'images';
     const IMAGE_INDEX_FILE = 'images/image_index.json';
     const IMAGE_EXTENSIONS = ['webp', 'jpg', 'jpeg', 'png'];
-    const MAX_IMAGE_VARIANTS = 8;
+    const MAX_IMAGE_VARIANTS = 30;
     const EDIT_PASSWORD = 'JanHunziker';
     const MANUAL_PLANTS_STORAGE_KEY = 'pflanzeninventar_manual_plants';
     const DELETED_PLANTS_STORAGE_KEY = 'pflanzeninventar_deleted_plants';
@@ -377,7 +434,8 @@
         ? row.__photos.map(photo => photo.src).filter(Boolean)
         : [];
       const indexedSources = row.ID ? getImageFilesForId(row.ID) : [];
-      return uploadedSources.length ? [...uploadedSources, ...indexedSources] : indexedSources;
+      const idSources = row.ID ? getImageCandidates(row.ID, 'original') : [];
+      return Array.from(new Set([...uploadedSources, ...indexedSources, ...idSources]));
     }
 
     function deletePlantById(id) {
@@ -491,7 +549,9 @@
 
     function parseCsv(text) {
       const lines = text.replace(/\r/g,'').split('\n').filter(line => line.trim());
-      const header = lines[0].split(';').map(cell => cell.trim());
+      const header = lines[0]
+        .split(';')
+        .map(cell => String(cell || '').replace(/^\uFEFF/, '').trim());
       const data = lines.slice(1).map(line => {
         const parts = line.split(';');
         const row = {};
@@ -578,7 +638,11 @@
         return cell;
       }
 
-      const imageFiles = getRowImageSources(row || {});
+      const indexedImageFiles = getRowImageSources(row || {});
+      const fallbackPreviewCandidates = getImageCandidates(id, 'preview');
+      const imageFiles = indexedImageFiles.length
+        ? indexedImageFiles
+        : fallbackPreviewCandidates;
       if (!imageFiles.length) {
         const placeholder = document.createElement('span');
         placeholder.textContent = 'kein Bild vorhanden';
@@ -588,10 +652,10 @@
         return cell;
       }
 
-      const previewSrc = imageFiles[0];
-      const originalCandidates = imageFiles;
+      const originalCandidates = indexedImageFiles.length ? indexedImageFiles : imageFiles;
 
-      const previewArea = document.createElement('div');
+      const previewArea = document.createElement('button');
+      previewArea.type = 'button';
       previewArea.style.width = '90px';
       previewArea.style.maxWidth = '100%';
       previewArea.style.aspectRatio = '1 / 1';
@@ -603,73 +667,84 @@
       previewArea.style.borderRadius = '8px';
       previewArea.style.border = '1px solid #ddd';
       previewArea.style.padding = '0.5rem';
-      previewArea.style.position = 'relative';
-      previewArea.style.cursor = 'default';
-      previewArea.textContent = 'Vorschau wird geladen...';
+      previewArea.style.cursor = 'pointer';
       previewArea.style.overflow = 'hidden';
+      previewArea.style.color = '#333';
+      previewArea.style.fontSize = '0.8rem';
+      previewArea.style.textAlign = 'center';
+      previewArea.textContent = 'Bilder anzeigen';
 
       const openOriginalPopup = () => {
-        openImagePopup(originalCandidates, latinName || id);
+        const schemaCandidates = indexedImageFiles.length
+          ? []
+          : [...getImageCandidates(id, 'original'), ...getImageCandidates(id, 'preview')];
+        const popupSources = Array.from(new Set([...originalCandidates, ...schemaCandidates]));
+        openImagePopup(popupSources, latinName || id);
       };
 
-      const loadOriginals = () => {
-        previewArea.style.cursor = 'default';
-        previewArea.title = '';
-        openOriginalPopup();
-      };
-
-      const showPreview = () => {
-        previewArea.textContent = 'Vorschau lädt...';
-        previewArea.style.cursor = 'default';
-        loadPreviewImage(previewSrc, previewArea, null, () => {
-          previewArea.style.cursor = 'pointer';
-          previewArea.title = 'Klicke für Originalbilder';
-          previewArea.onclick = loadOriginals;
-        }, id);
-      };
+      previewArea.title = 'Klicke für Originalbilder';
+      previewArea.addEventListener('click', openOriginalPopup);
 
       wrapper.appendChild(previewArea);
       cell.appendChild(wrapper);
 
-      showPreview();
-
       return cell;
     }
 
-    function loadPreviewImage(src, imageContainer, button, onSuccess, id) {
+    function loadPreviewImage(sources, imageContainer, button, onSuccess, id) {
+      const candidates = Array.isArray(sources) ? sources.filter(Boolean) : [sources].filter(Boolean);
       imageContainer.innerHTML = '';
       const status = document.createElement('span');
       status.textContent = 'Suche Vorschau...';
       status.style.color = '#777';
       imageContainer.appendChild(status);
-
-      const img = document.createElement('img');
-      img.alt = `Vorschau ${id}`;
-      img.className = 'image-modal-img';
-      img.style.maxWidth = '100%';
-      img.style.maxHeight = '100%';
-      img.style.objectFit = 'contain';
-      img.onload = () => {
-        imageContainer.innerHTML = '';
-        imageContainer.appendChild(img);
-        if (typeof onSuccess === 'function') onSuccess();
-        if (button) {
-          button.textContent = 'Vorschau geladen';
-          button.disabled = true;
-        }
-      };
-      img.onerror = () => {
+      if (!candidates.length) {
         imageContainer.innerHTML = '';
         const placeholder = document.createElement('span');
-        placeholder.textContent = 'Bild konnte nicht geladen werden';
+        placeholder.textContent = 'kein Bild vorhanden';
         placeholder.style.color = '#777';
         imageContainer.appendChild(placeholder);
-        if (button) {
-          button.textContent = 'Vorschau laden';
-          button.disabled = false;
-        }
+        return;
+      }
+
+      let candidateIndex = 0;
+      const tryLoad = () => {
+        const src = candidates[candidateIndex];
+        const img = document.createElement('img');
+        img.alt = `Vorschau ${id}`;
+        img.className = 'image-modal-img';
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        img.style.objectFit = 'contain';
+        img.onload = () => {
+          imageContainer.innerHTML = '';
+          imageContainer.appendChild(img);
+          if (typeof onSuccess === 'function') onSuccess(src);
+          if (button) {
+            button.textContent = 'Vorschau geladen';
+            button.disabled = true;
+          }
+        };
+        img.onerror = () => {
+          candidateIndex += 1;
+          if (candidateIndex < candidates.length) {
+            tryLoad();
+            return;
+          }
+          imageContainer.innerHTML = '';
+          const placeholder = document.createElement('span');
+          placeholder.textContent = 'Bild konnte nicht geladen werden';
+          placeholder.style.color = '#777';
+          imageContainer.appendChild(placeholder);
+          if (button) {
+            button.textContent = 'Vorschau laden';
+            button.disabled = false;
+          }
+        };
+        img.src = src;
       };
-      img.src = src;
+
+      tryLoad();
     }
 
     function openImagePopup(imageSources, titleText) {
@@ -705,13 +780,52 @@
 
       const gallery = document.createElement('div');
       gallery.className = 'image-modal-gallery';
-      imageSources.forEach(src => {
-        const img = document.createElement('img');
-        img.className = 'image-modal-img';
-        img.src = src;
-        img.alt = `Originalbild ${titleText}`;
-        gallery.appendChild(img);
-      });
+      const status = document.createElement('div');
+      status.style.color = '#777';
+      status.textContent = 'Bilder werden geladen...';
+      gallery.appendChild(status);
+
+      const uniqueSources = Array.from(new Set((imageSources || []).filter(Boolean)));
+      let pending = uniqueSources.length;
+      let loadedCount = 0;
+
+      if (!pending) {
+        status.textContent = 'keine Bilder gefunden';
+      } else {
+        uniqueSources.forEach(src => {
+          const img = new Image();
+          img.className = 'image-modal-img';
+          img.alt = `Originalbild ${titleText}`;
+          img.loading = 'lazy';
+          img.onload = () => {
+            loadedCount += 1;
+            pending -= 1;
+            img.src = src;
+            gallery.appendChild(img);
+            if (status.parentNode) {
+              status.textContent = `Bilder geladen: ${loadedCount}`;
+            }
+            if (pending === 0 && status.parentNode) {
+              if (loadedCount === 0) {
+                status.textContent = 'keine Bilder gefunden';
+              } else {
+                status.remove();
+              }
+            }
+          };
+          img.onerror = () => {
+            pending -= 1;
+            if (pending === 0 && status.parentNode) {
+              if (loadedCount === 0) {
+                status.textContent = 'keine Bilder gefunden';
+              } else {
+                status.remove();
+              }
+            }
+          };
+          img.src = src;
+        });
+      }
 
       content.appendChild(closeButton);
       content.appendChild(title);
@@ -921,6 +1035,87 @@
       openPlantForm(row);
     }
 
+    function openDeleteDialog() {
+      const id = window.prompt('Welche ID möchtest du löschen?');
+      if (id === null) return;
+      const row = findRowById(id);
+      if (!row) {
+        window.alert('Keine Pflanze mit dieser ID gefunden.');
+        return;
+      }
+      const label = row['Name Latein'] || row['Name Deutsch'] || row.ID;
+      const confirmed = window.confirm(`Möchtest du ${label} wirklich löschen?`);
+      if (!confirmed) return;
+      deletePlantById(row.ID);
+      search();
+    }
+
+    function openManagementPopup() {
+      const existingOverlay = document.querySelector('.image-modal-overlay');
+      if (existingOverlay) {
+        existingOverlay.remove();
+      }
+
+      const overlay = document.createElement('div');
+      overlay.className = 'image-modal-overlay';
+      overlay.tabIndex = -1;
+
+      const content = document.createElement('div');
+      content.className = 'image-modal-content';
+      content.innerHTML = `
+        <button class="image-modal-close" type="button">✕</button>
+        <div class="image-modal-title">Pflanzen bearbeiten</div>
+        <div class="management-popup-actions">
+          <button type="button" id="managementAddButton">Pflanze hinzufügen</button>
+          <button type="button" id="managementEditButton">Pflanze ändern</button>
+          <button type="button" id="managementDeleteButton">Pflanze löschen</button>
+        </div>
+      `;
+
+      const closePopup = () => {
+        overlay.remove();
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+
+      const handleKeyDown = event => {
+        if (event.key === 'Escape') {
+          closePopup();
+        }
+      };
+
+      content.querySelector('.image-modal-close').addEventListener('click', closePopup);
+      content.querySelector('#managementAddButton').addEventListener('click', () => {
+        closePopup();
+        openPlantForm();
+      });
+      content.querySelector('#managementEditButton').addEventListener('click', () => {
+        closePopup();
+        const id = window.prompt('Welche ID möchtest du ändern?');
+        if (id === null) return;
+        const row = findRowById(id);
+        if (!row) {
+          window.alert('Keine Pflanze mit dieser ID gefunden.');
+          return;
+        }
+        openPlantForm(row);
+      });
+      content.querySelector('#managementDeleteButton').addEventListener('click', () => {
+        closePopup();
+        openDeleteDialog();
+      });
+
+      overlay.appendChild(content);
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay) {
+          closePopup();
+        }
+      });
+
+      document.body.appendChild(overlay);
+      document.addEventListener('keydown', handleKeyDown);
+      overlay.focus();
+    }
+
     function formatBloomRange(row) {
       const activeMonths = MONTH_FIELDS.filter(month => String(row[month] || '').trim() === '1');
       if (!activeMonths.length) return '';
@@ -1048,7 +1243,7 @@
     async function init() {
       const status = document.getElementById('status');
       try {
-        const response = await fetch(CSV_FILE);
+        const response = await fetch(`${CSV_FILE}?v=${Date.now()}`, { cache: 'no-store' });
         if (!response.ok) throw new Error('CSV-Datei konnte nicht geladen werden.');
         const text = await response.text();
         const parsed = parseCsv(text);
@@ -1059,7 +1254,7 @@
         refreshRows();
 
         try {
-          const imageResponse = await fetch(IMAGE_INDEX_FILE);
+          const imageResponse = await fetch(`${IMAGE_INDEX_FILE}?v=${Date.now()}`, { cache: 'no-store' });
           if (imageResponse.ok) {
             imageIndex = await imageResponse.json();
           } else {
@@ -1130,21 +1325,13 @@
           event.preventDefault();
           resetFilters();
         });
-        document.getElementById('addPlantButton').addEventListener('click', event => {
-          event.preventDefault();
-          openPlantForm();
-        });
-        const editPlantButton = document.createElement('button');
-        editPlantButton.type = 'button';
-        editPlantButton.id = 'editPlantButton';
-        editPlantButton.textContent = 'Pflanzen ändern';
-        editPlantButton.addEventListener('click', event => {
-          event.preventDefault();
-          openEditDialog();
-        });
-        const pageActions = document.querySelector('.page-actions');
-        if (pageActions) {
-          pageActions.appendChild(editPlantButton);
+        const editEntryButton = document.getElementById('editEntryButton');
+        if (editEntryButton) {
+          editEntryButton.addEventListener('click', event => {
+            event.preventDefault();
+            if (!isEditAllowed()) return;
+            openManagementPopup();
+          });
         }
         renderTable(rows);
       } catch (error) {
