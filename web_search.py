@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 CSV_PATH = Path(__file__).with_name("Pflanzenliste_Maturaarbeit_DBV2.0_cvs.csv")
-FILTER_FIELDS = ["Name Deutsch", "Name Latein", "Pflanzenfamilie", "Wuchsform", "Blütenfarbe", "Gepflanzt"]
+FILTER_FIELDS = ["Name Deutsch", "Name Latein", "Pflanzenfamilie", "Wuchsform", "Gepflanzt"]
 MONTH_FIELDS = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
 
 
@@ -218,7 +218,10 @@ def main():
         sys.exit(1)
 
     server = ThreadingHTTPServer((args.host, args.port), SearchHandler)
-    print(f"Websuche gestartet: http://{args.host}:{args.port}/")
+    local_host = "127.0.0.1" if args.host == "0.0.0.0" else args.host
+    print(f"Websuche gestartet: http://{local_host}:{args.port}/")
+    if args.host == "0.0.0.0":
+        print(f"Falls dieser Server in einem Codespace läuft: Port {args.port} in VS Code weiterleiten.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

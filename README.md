@@ -32,6 +32,8 @@ Mit dem Skript `web_search.py` kannst du eine Weboberfläche starten, die den CS
 - Öffne im Browser:
   `http://localhost:8000/`
 
+In GitHub Codespaces ist `localhost` nur innerhalb des Containers erreichbar. Öffne in VS Code die Ansicht **Ports**, leite Port `8000` weiter und öffne anschließend den dort angezeigten Forwarded-Link. Die Adresse `http://0.0.0.0:8000/` ist keine Browser-Adresse.
+
 Die Oberfläche bietet Dropdown-Felder für:
 
 - `Name Deutsch`
