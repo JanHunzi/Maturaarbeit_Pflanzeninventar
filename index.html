@@ -7,7 +7,28 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; line-height: 1.5; box-sizing: border-box; }
     .container { width: min(100%, 1400px); margin: 0 auto; }
-    h1 { margin-bottom: 0.5rem; }
+    .page-header {
+      margin: 0 -1rem 1rem;
+      background: linear-gradient(rgba(15, 24, 32, 0.45), rgba(15, 24, 32, 0.45)),
+        url('images/PF-042.1_web.webp') center/cover no-repeat;
+      border-radius: 0 0 18px 18px;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+    }
+    .page-header-inner {
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      color: #fff;
+      font-size: clamp(2rem, 4vw, 3rem);
+      letter-spacing: 0.04em;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.45);
+    }
     .toolbar { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem; }
     .toolbar label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .page-actions { display: flex; gap: 0.75rem; margin: 0.75rem 0 1rem; flex-wrap: wrap; }
@@ -164,7 +185,11 @@
 </head>
 <body>
   <div class="container">
-    <h1>Pflanzeninventar</h1>
+    <header class="page-header">
+      <div class="page-header-inner">
+        <h1>Pflanzeninventar</h1>
+      </div>
+    </header>
 
       <div class="toolbar">
         <div>
@@ -1080,7 +1105,7 @@
           });
         });
 
-        const searchInputs = ['field-growth', 'field-color', 'field-planted'];
+        const searchInputs = ['field-growth', 'field-planted'];
         searchInputs.forEach(id => {
           const element = document.getElementById(id);
           if (!element) return;
