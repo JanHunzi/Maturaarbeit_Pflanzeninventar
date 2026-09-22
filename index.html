@@ -84,19 +84,10 @@
     }
     .toolbar-reset-wrap { align-self: end; }
     .filter-select-field { position: relative; }
-    select[multiple] { height: auto; font: inherit; }
-    select[multiple][size="1"] { height: 2.7rem; }
-    select[multiple].compact { min-height: 2.7rem; }
-    select[multiple].compact.is-open {
-      position: absolute;
-      top: calc(1.5em + 0.25rem);
-      left: 0;
-      width: 100%;
-      height: auto;
-      max-height: min(45vh, 360px);
-      z-index: 20;
-      background: #fff;
-    }
+    .multi-select-trigger { text-align: left; background: #fff; color: #222; font-weight: 400; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; }
+    .multi-select-trigger:hover { background: #f7f9fc; }
+    .visually-hidden-multiselect { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .suggestion-item.selected { background: #eaf2fc; font-weight: 600; }
     .suggestion-item { display: block; width: 100%; padding: 0.5rem 0.7rem; box-sizing: border-box; cursor: pointer; }
     .suggestion-item:hover { background: #f4f7fb; }
     .suggestion-item strong,
@@ -328,8 +319,10 @@
           </div>
         </div>
         <div class="filter-select-field">
-          <label for="field-month">Blütenmonate</label>
-          <select id="field-month" multiple size="1">
+          <label for="field-month-trigger">Blütenmonate</label>
+          <button type="button" id="field-month-trigger" class="multi-select-trigger">Alle Monate</button>
+          <div id="field-month-suggestions" class="suggestions"></div>
+          <select id="field-month" multiple class="visually-hidden-multiselect">
             <option value="all">Alle Monate</option>
             <option>Jan</option>
             <option>Feb</option>
@@ -346,8 +339,10 @@
           </select>
         </div>
         <div class="filter-select-field">
-          <label for="field-color">Blütenfarbe</label>
-          <select id="field-color" multiple size="1">
+          <label for="field-color-trigger">Blütenfarbe</label>
+          <button type="button" id="field-color-trigger" class="multi-select-trigger">Alle Farben</button>
+          <div id="field-color-suggestions" class="suggestions"></div>
+          <select id="field-color" multiple class="visually-hidden-multiselect">
             <option value="all">Alle Farben</option>
             <option value="rot">Rot</option>
             <option value="orange">Orange</option>
@@ -637,12 +632,68 @@
       Object.keys(AUTOCOMPLETE_FIELD_MAP).forEach(hideFieldSuggestions);
     }
 
+    const MULTI_SELECT_LABELS = {
+      'field-month': 'Alle Monate',
+      'field-color': 'Alle Farben'
+    };
+
     function closeMultiSelects() {
-      ['field-month', 'field-color'].forEach(id => {
-        const select = document.getElementById(id);
-        if (!select) return;
-        select.size = 1;
-        select.classList.remove('is-open');
+      Object.keys(MULTI_SELECT_LABELS).forEach(id => {
+        const box = document.getElementById(`${id}-suggestions`);
+        if (box) box.style.display = 'none';
+      });
+    }
+
+    function renderMultiSelectList(id) {
+      const select = document.getElementById(id);
+      const trigger = document.getElementById(`${id}-trigger`);
+      const box = document.getElementById(`${id}-suggestions`);
+      if (!select || !trigger || !box) return;
+      const selectedOptions = Array.from(select.selectedOptions);
+      const activeOptions = selectedOptions.filter(option => option.value !== 'all');
+      trigger.textContent = activeOptions.length
+        ? activeOptions.map(option => option.textContent).join(', ')
+        : MULTI_SELECT_LABELS[id];
+
+      box.innerHTML = '';
+      Array.from(select.options).forEach(option => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item' + (option.selected ? ' selected' : '');
+        item.textContent = option.textContent;
+        item.addEventListener('mousedown', event => {
+          event.preventDefault();
+          if (option.value === 'all') {
+            Array.from(select.options).forEach(opt => { opt.selected = opt.value === 'all'; });
+          } else {
+            option.selected = !option.selected;
+            const allOption = select.querySelector('option[value="all"]');
+            if (allOption) allOption.selected = false;
+            const anySelected = Array.from(select.options).some(opt => opt.selected && opt.value !== 'all');
+            if (!anySelected && allOption) allOption.selected = true;
+          }
+          renderMultiSelectList(id);
+          search();
+        });
+        box.appendChild(item);
+      });
+    }
+
+    function setupMultiSelectField(id) {
+      const trigger = document.getElementById(`${id}-trigger`);
+      const box = document.getElementById(`${id}-suggestions`);
+      if (!trigger || !box) return;
+      renderMultiSelectList(id);
+      trigger.addEventListener('click', event => {
+        event.preventDefault();
+        const isOpen = box.style.display === 'block';
+        closeMultiSelects();
+        hideAllFieldSuggestions();
+        box.style.display = isOpen ? 'none' : 'block';
+      });
+      trigger.addEventListener('keydown', event => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        closeMultiSelects();
       });
     }
 
@@ -1277,6 +1328,8 @@
           option.selected = option.value === 'all';
         });
       }
+      renderMultiSelectList('field-month');
+      renderMultiSelectList('field-color');
       closeMultiSelects();
       hideAllFieldSuggestions();
       document.getElementById('status').textContent = `Daten geladen: ${rows.length} Zeile(n)`;
@@ -1365,45 +1418,8 @@
           });
         });
 
-        ['field-month', 'field-color'].forEach(id => {
-          const select = document.getElementById(id);
-          if (!select) return;
-          select.classList.add('compact');
-          select.addEventListener('click', event => {
-            if (event.target.tagName === 'OPTION') return;
-            const shouldOpen = select.size === 1;
-            closeMultiSelects();
-            if (shouldOpen) {
-              select.size = select.options.length;
-              select.classList.add('is-open');
-            }
-          });
-          select.addEventListener('keydown', event => {
-            if (event.key !== 'Enter' || select.size === 1) return;
-            event.preventDefault();
-            closeMultiSelects();
-          });
-          select.addEventListener('mousedown', event => {
-            if (event.target.tagName !== 'OPTION') return;
-            event.preventDefault();
-            const option = event.target;
-            if (option.value === 'all') {
-              Array.from(select.options).forEach(opt => {
-                opt.selected = opt.value === 'all';
-              });
-            } else {
-              option.selected = !option.selected;
-              const allOption = select.querySelector('option[value="all"]');
-              if (allOption) allOption.selected = false;
-              const anySelected = Array.from(select.options).some(opt => opt.selected && opt.value !== 'all');
-              if (!anySelected && allOption) {
-                allOption.selected = true;
-              }
-            }
-            search();
-          });
-          select.addEventListener('change', search);
-        });
+        setupMultiSelectField('field-month');
+        setupMultiSelectField('field-color');
 
         document.addEventListener('click', event => {
           if (event.target.closest('.autocomplete-wrapper')) return;
