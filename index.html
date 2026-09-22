@@ -24,37 +24,42 @@
       font-size: clamp(2rem, 4vw, 3rem);
       letter-spacing: 0.04em;
     }
-    .admin-edit-toggle {
+    .admin-controls {
       position: absolute;
       top: 0.5rem;
       right: 0.5rem;
-      width: 2.25rem;
-      height: 2.25rem;
-      padding: 0.4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+    }
+    .admin-edit-toggle {
+      width: auto;
+      height: auto;
+      padding: 0.5rem 0.9rem;
       display: flex;
       align-items: center;
       justify-content: center;
       background: #fff;
       color: #2d3a4a;
       border: 1px solid #bcc6d1;
-      border-radius: 50%;
+      border-radius: 6px;
+      font-weight: 600;
     }
     .admin-edit-toggle:hover { background: #f5f8fb; }
-    .admin-edit-toggle svg { width: 100%; height: 100%; }
     .admin-toolbar {
-      position: absolute;
-      top: 0.5rem;
-      right: 3.25rem;
       display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
       gap: 0.4rem;
       opacity: 0;
-      transform: translateX(15px);
+      transform: translateY(-10px);
       pointer-events: none;
       transition: opacity 0.2s ease, transform 0.2s ease;
     }
     .admin-toolbar.visible {
       opacity: 1;
-      transform: translateX(0);
+      transform: translateY(0);
       pointer-events: auto;
     }
     .admin-toolbar button {
@@ -282,13 +287,13 @@
       <div class="page-header-inner">
         <h1>Pflanzeninventar</h1>
       </div>
-      <button id="adminEditToggle" class="admin-edit-toggle" type="button" title="Bearbeiten" aria-label="Bearbeiten">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/><path d="m18.5 2.5 3 3L12 15l-4 1 1-4Z"/></svg>
-      </button>
-      <div id="adminToolbar" class="admin-toolbar">
-        <button id="addPlantButton" type="button">Pflanze hinzufügen</button>
-        <button id="editPlantButton" type="button">Pflanze bearbeiten</button>
-        <button id="deletePlantButtonMain" class="danger" type="button">Pflanze löschen</button>
+      <div class="admin-controls">
+        <button id="adminEditToggle" class="admin-edit-toggle" type="button">Einträge bearbeiten</button>
+        <div id="adminToolbar" class="admin-toolbar">
+          <button id="addPlantButton" type="button">Pflanze hinzufügen</button>
+          <button id="editPlantButton" type="button">Pflanze bearbeiten</button>
+          <button id="deletePlantButtonMain" class="danger" type="button">Pflanze löschen</button>
+        </div>
       </div>
     </header>
 
