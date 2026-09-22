@@ -104,9 +104,8 @@
     table { width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse; }
     th, td { border: 1px solid #ddd; padding: 0.45rem; text-align: left; overflow-wrap: anywhere; }
     th:nth-child(1), td:nth-child(1) { width: 12%; }
-    th:nth-child(2), td:nth-child(2) { width: 5%; }
-    th:nth-child(3), td:nth-child(3) { width: 16%; }
-    th:nth-child(4), td:nth-child(4) { width: 17%; }
+    th:nth-child(2), td:nth-child(2) { width: 16%; }
+    th:nth-child(3), td:nth-child(3) { width: 17%; }
     th { background: #f4f4f4; }
     .footer { margin-top: 1rem; color: #555; }
     .spinner { display: inline-block; margin-left: 0.5rem; }
@@ -1259,8 +1258,9 @@
         }
         fieldsWithBloomRange.splice(colorInsertIndex, 0, 'Blütenfarbe');
       }
+      const displayFields = fieldsWithBloomRange.filter(name => name !== 'ID');
 
-      const headers = ['Bild', ...fieldsWithBloomRange];
+      const headers = ['Bild', ...displayFields];
       headers.forEach(name => {
         const th = document.createElement('th');
         th.textContent = name;
@@ -1275,7 +1275,7 @@
       displayRows.forEach(row => {
         const tr = document.createElement('tr');
         tr.appendChild(renderImageCell(row));
-        fieldsWithBloomRange.forEach(name => {
+        displayFields.forEach(name => {
           const td = document.createElement('td');
           if (name === 'Blütenmonate') {
             td.textContent = formatBloomRange(row);
