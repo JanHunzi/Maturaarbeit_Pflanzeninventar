@@ -44,14 +44,24 @@
       color: #2d3a4a;
       border: 1px solid #bcc6d1;
       border-radius: 6px;
-      font-weight: 600;
     }
     .admin-edit-toggle:hover { background: #f5f8fb; }
     .admin-toolbar {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
       display: flex;
+      flex-direction: column;
       flex-wrap: wrap;
       justify-content: flex-end;
       gap: 0.4rem;
+      min-width: 12rem;
+      padding: 0.5rem;
+      background: #fff;
+      border: 1px solid #bcc6d1;
+      border-radius: 6px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+      z-index: 50;
       opacity: 0;
       transform: translateY(-10px);
       pointer-events: none;
@@ -63,6 +73,7 @@
       pointer-events: auto;
     }
     .admin-toolbar button {
+      width: 100%;
       font-size: 0.8rem;
       padding: 0.35rem 0.6rem;
       background: #fff;
