@@ -1422,9 +1422,10 @@
         setupMultiSelectField('field-color');
 
         document.addEventListener('click', event => {
-          if (event.target.closest('.autocomplete-wrapper')) return;
-          if (!event.target.closest('.filter-select-field')) closeMultiSelects();
-          hideAllFieldSuggestions();
+          const insideAutocomplete = event.target.closest('.autocomplete-wrapper');
+          const insideMultiSelect = event.target.closest('.filter-select-field');
+          if (!insideMultiSelect) closeMultiSelects();
+          if (!insideAutocomplete) hideAllFieldSuggestions();
         });
 
         document.getElementById('resetButton').addEventListener('click', event => {
