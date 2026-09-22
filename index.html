@@ -8,40 +8,67 @@
     body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; line-height: 1.5; box-sizing: border-box; }
     .container { width: min(100%, 1400px); margin: 0 auto; }
     .page-header {
-      margin: 0 -1rem 1rem;
-      background: linear-gradient(rgba(15, 24, 32, 0.45), rgba(15, 24, 32, 0.45)),
-        url('images/PF-042.1_web.webp') center/cover no-repeat;
-      border-radius: 0 0 18px 18px;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+      margin: 0 0 1rem;
+      position: relative;
     }
     .page-header-inner {
-      min-height: 220px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 2rem 1rem;
+      padding: 1rem;
       text-align: center;
     }
     h1 {
       margin: 0;
-      color: #fff;
+      color: #222;
       font-size: clamp(2rem, 4vw, 3rem);
       letter-spacing: 0.04em;
-      text-shadow: 0 2px 12px rgba(0,0,0,0.45);
     }
-    .toolbar { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem; }
-    .toolbar label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
-    .page-actions { display: flex; gap: 0.75rem; margin: 0.75rem 0 1rem; flex-wrap: wrap; }
-    .page-actions button { flex: 1 1 220px; }
-    .page-actions .secondary-action {
+    .admin-edit-toggle {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 2.25rem;
+      height: 2.25rem;
+      padding: 0.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      color: #2d3a4a;
+      border: 1px solid #bcc6d1;
+      border-radius: 50%;
+    }
+    .admin-edit-toggle:hover { background: #f5f8fb; }
+    .admin-edit-toggle svg { width: 100%; height: 100%; }
+    .admin-toolbar {
+      position: absolute;
+      top: 0.5rem;
+      right: 3.25rem;
+      display: flex;
+      gap: 0.4rem;
+      opacity: 0;
+      transform: translateX(15px);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .admin-toolbar.visible {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+    .admin-toolbar button {
+      font-size: 0.8rem;
+      padding: 0.35rem 0.6rem;
       background: #fff;
       color: #2d3a4a;
       border: 1px solid #bcc6d1;
     }
-    .page-actions .secondary-action:hover {
-      background: #f5f8fb;
-      border-color: #a7b4c2;
-    }
+    .admin-toolbar button:hover { background: #f5f8fb; border-color: #a7b4c2; }
+    .admin-toolbar .danger { color: #a61d1d; border-color: #e2b3b3; }
+    .admin-toolbar .danger:hover { background: #fbeaea; }
+    .toolbar { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem; }
+    .toolbar label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .autocomplete-wrapper { position: relative; }
     .suggestions { position: absolute; top: calc(100% + 0.25rem); left: 0; right: 0; background: #fff; border: 1px solid #bbb; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-height: 240px; overflow-y: auto; z-index: 10; display: none; }
     .toolbar .toolbar-reset {
@@ -167,8 +194,6 @@
     @media (max-width: 900px) {
       body { padding: 0.75rem; }
       .toolbar { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-      .page-actions { flex-direction: column; }
-      .page-actions button { flex: 1 1 auto; }
       th, td { padding: 0.45rem; }
       .image-cell img { max-width: 180px; max-height: 130px; }
     }
@@ -188,6 +213,14 @@
     <header class="page-header">
       <div class="page-header-inner">
         <h1>Pflanzeninventar</h1>
+      </div>
+      <button id="adminEditToggle" class="admin-edit-toggle" type="button" title="Bearbeiten" aria-label="Bearbeiten">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/><path d="m18.5 2.5 3 3L12 15l-4 1 1-4Z"/></svg>
+      </button>
+      <div id="adminToolbar" class="admin-toolbar">
+        <button id="addPlantButton" type="button">Pflanze hinzufügen</button>
+        <button id="editPlantButton" type="button">Pflanze bearbeiten</button>
+        <button id="deletePlantButtonMain" class="danger" type="button">Pflanze löschen</button>
       </div>
     </header>
 
@@ -245,16 +278,13 @@
         </div>
       </div>
 
-    <div class="page-actions">
-      <button id="addPlantButton" type="button">Neue Pflanze hinzufügen</button>
-    </div>
     <div class="footer" id="status">Lade Daten...</div>
 
     <div id="result"></div>
   </div>
 
   <script>
-    const CSV_FILE = 'Pflanzenliste_Maturaarbeit_DBV2.0_cvs.csv';
+    const CSV_FILE = 'Pflanzenliste_Maturaarbeit_DBV5.0_cvs.csv';
     const AUTOCOMPLETE_FIELD_MAP = {
       'field-name-de': 'Name Deutsch',
       'field-name-latin': 'Name Latein',
@@ -266,8 +296,8 @@
     };
     const FIELD_MAP = { ...AUTOCOMPLETE_FIELD_MAP, ...SELECT_FIELD_MAP };
     const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-    const IMAGE_BASE_PATH = 'images';
-    const IMAGE_INDEX_FILE = 'images/image_index.json';
+    const IMAGE_BASE_PATH = 'imgV4';
+    const IMAGE_INDEX_FILE = 'imgV4/image_index.json';
     const IMAGE_EXTENSIONS = ['webp', 'jpg', 'jpeg', 'png'];
     const MAX_IMAGE_VARIANTS = 8;
     const EDIT_PASSWORD = 'JanHunziker';
@@ -767,6 +797,7 @@
       function handleKeyDown(event) {
         if (event.key === 'Escape') {
           closePopup();
+          collapseAdminToolbar();
         }
       }
 
@@ -803,7 +834,6 @@
           </div>
           <div class="plant-modal-actions">
             <button type="button" id="cancelPlantButton">Abbrechen</button>
-            ${existingRow ? '<button type="button" id="deletePlantButton" class="danger">Pflanze löschen</button>' : ''}
             <button type="submit">Pflanze speichern</button>
           </div>
         </form>
@@ -811,20 +841,12 @@
 
       const closeButton = content.querySelector('.image-modal-close');
       const cancelButton = content.querySelector('#cancelPlantButton');
-      const deleteButton = content.querySelector('#deletePlantButton');
       const form = content.querySelector('#plantForm');
       const closeHandlers = [closeButton, cancelButton].filter(Boolean);
-      closeHandlers.forEach(button => button.addEventListener('click', closePopup));
-
-      if (deleteButton && existingRow) {
-        deleteButton.addEventListener('click', () => {
-          const label = existingRow['Name Latein'] || existingRow['Name Deutsch'] || existingRow.ID;
-          const confirmed = window.confirm(`Möchtest du ${label} wirklich löschen?`);
-          if (!confirmed) return;
-          deletePlantById(existingRow.ID);
-          closePopup();
-        });
-      }
+      closeHandlers.forEach(button => button.addEventListener('click', () => {
+        closePopup();
+        collapseAdminToolbar();
+      }));
 
       form.addEventListener('submit', async event => {
         event.preventDefault();
@@ -863,6 +885,7 @@
         refreshRows();
         refreshFilterOptions();
         closePopup();
+        collapseAdminToolbar();
         search();
       });
 
@@ -870,6 +893,7 @@
       overlay.addEventListener('click', event => {
         if (event.target === overlay) {
           closePopup();
+          collapseAdminToolbar();
         }
       });
 
@@ -930,7 +954,6 @@
     }
 
     function openEditDialog() {
-      if (!isEditAllowed()) return;
       const id = window.prompt('Welche ID möchtest du ändern?');
       if (id === null) return;
       const row = findRowById(id);
@@ -939,6 +962,26 @@
         return;
       }
       openPlantForm(row);
+    }
+
+    function openDeleteDialog() {
+      const id = window.prompt('Welche ID möchtest du löschen?');
+      if (id === null) return;
+      const row = findRowById(id);
+      if (!row) {
+        window.alert('Keine Pflanze mit dieser ID gefunden.');
+        return;
+      }
+      const label = row['Name Latein'] || row['Name Deutsch'] || row.ID;
+      const confirmed = window.confirm(`Möchtest du ${label} wirklich löschen?`);
+      if (!confirmed) return;
+      deletePlantById(row.ID);
+      collapseAdminToolbar();
+    }
+
+    function collapseAdminToolbar() {
+      const adminToolbar = document.getElementById('adminToolbar');
+      if (adminToolbar) adminToolbar.classList.remove('visible');
     }
 
     function formatBloomRange(row) {
@@ -1152,20 +1195,23 @@
         });
         document.getElementById('addPlantButton').addEventListener('click', event => {
           event.preventDefault();
+          if (!isEditAllowed()) return;
           openPlantForm();
         });
-        const editPlantButton = document.createElement('button');
-        editPlantButton.type = 'button';
-        editPlantButton.id = 'editPlantButton';
-        editPlantButton.textContent = 'Pflanzen ändern';
-        editPlantButton.addEventListener('click', event => {
+        document.getElementById('editPlantButton').addEventListener('click', event => {
           event.preventDefault();
+          if (!isEditAllowed()) return;
           openEditDialog();
         });
-        const pageActions = document.querySelector('.page-actions');
-        if (pageActions) {
-          pageActions.appendChild(editPlantButton);
-        }
+        document.getElementById('deletePlantButtonMain').addEventListener('click', event => {
+          event.preventDefault();
+          if (!isEditAllowed()) return;
+          openDeleteDialog();
+        });
+        document.getElementById('adminEditToggle').addEventListener('click', event => {
+          event.preventDefault();
+          document.getElementById('adminToolbar').classList.toggle('visible');
+        });
         renderTable(rows);
       } catch (error) {
         status.innerHTML = '<span class="error">Fehler: ' + error.message + '</span>';
