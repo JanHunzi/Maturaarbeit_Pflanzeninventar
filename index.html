@@ -362,7 +362,7 @@
         </div>
       </div>
 
-    <div class="footer" id="status">Lade Daten...</div>
+    <div class="footer" id="status"></div>
 
     <div id="result"></div>
   </div>
@@ -1336,7 +1336,6 @@
       renderMultiSelectList('field-color');
       closeMultiSelects();
       hideAllFieldSuggestions();
-      document.getElementById('status').textContent = `Daten geladen: ${rows.length} Zeile(n)`;
       renderTable(rows);
     }
 
@@ -1377,7 +1376,7 @@
         return true;
       });
 
-      document.getElementById('status').textContent = `${filtered.length} Ergebnis(se)`;
+      document.getElementById('status').textContent = '';
       renderTable(filtered);
     }
 
@@ -1404,8 +1403,6 @@
         } catch (error) {
           console.warn('Bildindex konnte nicht geladen werden:', error);
         }
-
-        status.textContent = `Daten geladen: ${rows.length} Zeile(n)`;
 
         refreshFilterOptions();
 
