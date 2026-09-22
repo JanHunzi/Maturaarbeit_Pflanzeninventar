@@ -6,7 +6,7 @@
   <title>Pflanzeninventar Suche</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; line-height: 1.5; box-sizing: border-box; }
-    .container { width: min(100%, 1400px); margin: 0 auto; }
+    .container { width: 100%; max-width: 100%; margin: 0; }
     .page-header {
       margin: 0 0 1rem;
       position: relative;
@@ -67,11 +67,14 @@
     .admin-toolbar button:hover { background: #f5f8fb; border-color: #a7b4c2; }
     .admin-toolbar .danger { color: #a61d1d; border-color: #e2b3b3; }
     .admin-toolbar .danger:hover { background: #fbeaea; }
-    .toolbar { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem; }
+    .toolbar { display: grid; width: 100%; gap: 1rem; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 1rem; }
+    .toolbar > div { min-width: 0; }
     .toolbar label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .autocomplete-wrapper { position: relative; }
-    .suggestions { position: absolute; top: calc(100% + 0.25rem); left: 0; right: 0; background: #fff; border: 1px solid #bbb; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-height: 240px; overflow-y: auto; z-index: 10; display: none; }
+    .suggestions { position: absolute; top: calc(100% + 0.25rem); left: 0; right: 0; width: 100%; box-sizing: border-box; background: #fff; border: 1px solid #bbb; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-height: min(45vh, 360px); overflow-y: auto; z-index: 10; display: none; }
     .toolbar .toolbar-reset {
+      width: 100%;
+      margin-left: auto;
       background: #fff;
       color: #2d3a4a;
       border: 1px solid #bbb;
@@ -79,21 +82,40 @@
     .toolbar .toolbar-reset:hover {
       background: #f7f9fc;
     }
-    select[multiple] { height: auto; }
-    select[multiple][size="1"] { height: auto; }
+    .toolbar-reset-wrap { align-self: end; }
+    .filter-select-field { position: relative; }
+    select[multiple] { height: auto; font: inherit; }
+    select[multiple][size="1"] { height: 2.7rem; }
     select[multiple].compact { min-height: 2.7rem; }
-    .suggestion-item { padding: 0.5rem 0.7rem; cursor: pointer; }
+    select[multiple].compact.is-open {
+      position: absolute;
+      top: calc(1.5em + 0.25rem);
+      left: 0;
+      width: 100%;
+      height: auto;
+      max-height: min(45vh, 360px);
+      z-index: 20;
+      background: #fff;
+    }
+    .suggestion-item { display: block; width: 100%; padding: 0.5rem 0.7rem; box-sizing: border-box; cursor: pointer; }
     .suggestion-item:hover { background: #f4f7fb; }
+    .suggestion-item strong,
+    .suggestion-item span { display: block; }
+    .suggestion-item span { color: #5d6672; font-size: 0.9rem; }
     .image-cell { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
     .image-cell img { max-width: 220px; max-height: 160px; width: auto; height: auto; object-fit: contain; border-radius: 6px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
     .image-cell button { width: auto; padding: 0.45rem 0.75rem; border-radius: 5px; border: 1px solid #bbb; background: #fff; color: #333; cursor: pointer; }
     .image-cell button:hover { background: #f7f9fc; }
-    select, input[type=text], button { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; }
+    select, input[type=text], button { width: 100%; height: 2.7rem; padding: 0.55rem 0.7rem; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; }
     button { cursor: pointer; background: #2a7ae2; color: #fff; border: none; transition: background 0.2s ease; }
     button:hover { background: #1c61c3; }
-    .table-scroll { width: 100%; overflow-x: auto; margin-top: 1rem; }
-    table { width: 100%; min-width: max-content; border-collapse: collapse; }
-    th, td { border: 1px solid #ddd; padding: 0.55rem; text-align: left; }
+    .table-scroll { width: 100%; max-width: 100%; overflow-x: hidden; margin-top: 1rem; }
+    table { width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 0.45rem; text-align: left; overflow-wrap: anywhere; }
+    th:nth-child(1), td:nth-child(1) { width: 12%; }
+    th:nth-child(2), td:nth-child(2) { width: 5%; }
+    th:nth-child(3), td:nth-child(3) { width: 16%; }
+    th:nth-child(4), td:nth-child(4) { width: 17%; }
     th { background: #f4f4f4; }
     .footer { margin-top: 1rem; color: #555; }
     .spinner { display: inline-block; margin-left: 0.5rem; }
@@ -117,6 +139,53 @@
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
       position: relative;
       padding: 1rem;
+    }
+    .plant-selector-panel {
+      width: min(100%, 420px);
+      height: 100%;
+      max-height: none;
+      margin-left: auto;
+      border-radius: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .plant-selector-panel .plant-modal-field {
+      flex: 0 0 auto;
+    }
+    .plant-selector-results {
+      display: grid;
+      gap: 0.5rem;
+      overflow-y: auto;
+      margin-top: 1rem;
+      padding-right: 0.25rem;
+    }
+    .plant-selector-item {
+      width: 100%;
+      height: auto;
+      min-height: 3.4rem;
+      padding: 0.65rem 0.75rem;
+      text-align: left;
+      background: #f7f9fc;
+      color: #222;
+      border: 1px solid #d5dbe3;
+      border-radius: 5px;
+    }
+    .plant-selector-item:hover {
+      background: #eaf2fc;
+      border-color: #2a7ae2;
+    }
+    .plant-selector-item strong,
+    .plant-selector-item span {
+      display: block;
+    }
+    .plant-selector-item span {
+      color: #5d6672;
+      font-size: 0.9rem;
+    }
+    .plant-selector-empty {
+      color: #777;
+      margin: 0;
     }
     .image-modal-close {
       position: absolute;
@@ -194,15 +263,20 @@
     @media (max-width: 900px) {
       body { padding: 0.75rem; }
       .toolbar { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-      th, td { padding: 0.45rem; }
-      .image-cell img { max-width: 180px; max-height: 130px; }
+      .toolbar-reset-wrap { grid-column: auto; }
+      th, td { padding: 0.35rem; font-size: 0.9rem; }
+      .image-cell img { max-width: 100%; max-height: 110px; }
     }
     @media (max-width: 600px) {
       body { padding: 0.5rem; }
       h1 { font-size: 1.4rem; }
       .toolbar { grid-template-columns: 1fr; }
+      .toolbar-reset-wrap { grid-column: auto; }
       .image-cell { gap: 0.25rem; }
+      th, td { padding: 0.25rem; font-size: 0.78rem; }
+      .image-cell img { max-height: 80px; }
       .image-modal-content { padding: 0.85rem; }
+      .plant-selector-panel { width: 100%; }
       .plant-modal-grid { grid-template-columns: 1fr; }
       .plant-modal-months { grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); }
     }
@@ -248,13 +322,12 @@
         </div>
         <div>
           <label for="field-growth">Wuchsform</label>
-          <select id="field-growth"><option value="all">Alle</option></select>
+          <div class="autocomplete-wrapper">
+            <input id="field-growth" type="text" placeholder="Wuchsform suchen" autocomplete="off" />
+            <div id="field-growth-suggestions" class="suggestions"></div>
+          </div>
         </div>
-        <div>
-          <label for="field-planted">Gepflanzt</label>
-          <select id="field-planted"><option value="all">Alle</option></select>
-        </div>
-        <div>
+        <div class="filter-select-field">
           <label for="field-month">Blütenmonate</label>
           <select id="field-month" multiple size="1">
             <option value="all">Alle Monate</option>
@@ -272,8 +345,21 @@
             <option>Dez</option>
           </select>
         </div>
-        <div>
-          <label for="resetButton">Suche</label>
+        <div class="filter-select-field">
+          <label for="field-color">Blütenfarbe</label>
+          <select id="field-color" multiple size="1">
+            <option value="all">Alle Farben</option>
+            <option value="rot">Rot</option>
+            <option value="orange">Orange</option>
+            <option value="gelb">Gelb</option>
+            <option value="grün">Grün</option>
+            <option value="blau">Blau</option>
+            <option value="violett">Violett</option>
+            <option value="rosa">Rosa</option>
+            <option value="weiss">Weiss</option>
+          </select>
+        </div>
+        <div class="toolbar-reset-wrap">
           <button id="resetButton" class="toolbar-reset" type="button">Suche zurücksetzen</button>
         </div>
       </div>
@@ -288,14 +374,13 @@
     const AUTOCOMPLETE_FIELD_MAP = {
       'field-name-de': 'Name Deutsch',
       'field-name-latin': 'Name Latein',
-      'field-family': 'Pflanzenfamilie'
+      'field-family': 'Pflanzenfamilie',
+      'field-growth': 'Wuchsform'
     };
-    const SELECT_FIELD_MAP = {
-      'field-growth': 'Wuchsform',
-      'field-planted': 'Gepflanzt'
-    };
+    const SELECT_FIELD_MAP = {};
     const FIELD_MAP = { ...AUTOCOMPLETE_FIELD_MAP, ...SELECT_FIELD_MAP };
     const MONTH_FIELDS = ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    const COLOR_FIELDS = ['rot','orange','gelb','grün','blau','violett','rosa','weiss'];
     const IMAGE_BASE_PATH = 'imgV4';
     const IMAGE_INDEX_FILE = 'imgV4/image_index.json';
     const IMAGE_EXTENSIONS = ['webp', 'jpg', 'jpeg', 'png'];
@@ -303,15 +388,16 @@
     const EDIT_PASSWORD = 'JanHunziker';
     const MANUAL_PLANTS_STORAGE_KEY = 'pflanzeninventar_manual_plants';
     const DELETED_PLANTS_STORAGE_KEY = 'pflanzeninventar_deleted_plants';
-    const MANUAL_ROW_FIELDS = ['ID', 'Name Deutsch', 'Name Latein', 'Pflanzenfamilie', 'Wuchsform', 'Blütenfarbe', 'Gepflanzt', ...MONTH_FIELDS];
-    const EDITABLE_FIELDS = ['Name Deutsch', 'Name Latein', 'Pflanzenfamilie', 'Wuchsform', 'Blütenfarbe', 'Gepflanzt'];
+    const MANUAL_ROW_FIELDS = ['ID', 'Name Deutsch', 'Name Latein', 'Pflanzenfamilie', 'Wuchsform', 'Blütenfarbe', ...MONTH_FIELDS];
+    const EDITABLE_FIELDS = ['Name Deutsch', 'Name Latein', 'Pflanzenfamilie', 'Wuchsform', 'Blütenfarbe'];
     let rows = [];
     let baseRows = [];
     let fieldNames = [];
     let fieldSuggestionValues = {
       'field-name-de': [],
       'field-name-latin': [],
-      'field-family': []
+      'field-family': [],
+      'field-growth': []
     };
     let imageIndex = {};
     let manualPlants = [];
@@ -453,7 +539,9 @@
       const currentValues = {};
       Object.keys(SELECT_FIELD_MAP).forEach(id => {
         const select = document.getElementById(id);
-        currentValues[id] = select ? select.value : 'all';
+        currentValues[id] = select?.multiple
+          ? Array.from(select.selectedOptions).map(option => option.value)
+          : (select ? select.value : 'all');
       });
 
       Object.keys(SELECT_FIELD_MAP).forEach(id => {
@@ -466,8 +554,14 @@
           option.textContent = value;
           select.appendChild(option);
         });
-        if (currentValues[id] && Array.from(select.options).some(option => option.value === currentValues[id])) {
-          select.value = currentValues[id];
+        const selectedValues = Array.isArray(currentValues[id]) ? currentValues[id] : [currentValues[id]];
+        const availableValues = selectedValues.filter(value => Array.from(select.options).some(option => option.value === value));
+        if (availableValues.length) {
+          select.querySelectorAll('option').forEach(option => {
+            option.selected = availableValues.includes(option.value);
+          });
+        } else {
+          select.value = 'all';
         }
       });
 
@@ -493,11 +587,15 @@
       const box = document.getElementById(`${fieldId}-suggestions`);
       if (!input || !box) return;
 
+      const nameField = fieldId === 'field-name-de' ? 'Name Deutsch' : fieldId === 'field-name-latin' ? 'Name Latein' : '';
+      const isPlantNameSearch = Boolean(nameField);
       const values = fieldSuggestionValues[fieldId] || [];
       const normalized = String(query || '').trim().toLowerCase();
-      const matches = showAll || !normalized
-        ? values
-        : values.filter(value => startsWithWord(value, normalized));
+      const matches = isPlantNameSearch
+        ? rows.filter(row => showAll || !normalized || startsWithWord(row[nameField], normalized))
+        : (showAll || !normalized
+          ? values
+          : values.filter(value => startsWithWord(value, normalized)));
 
       if (!matches.length) {
         box.style.display = 'none';
@@ -505,13 +603,23 @@
         return;
       }
 
-      box.innerHTML = matches.map(value => `<div class="suggestion-item">${value}</div>`).join('');
+      box.innerHTML = '';
       box.style.display = 'block';
 
-      box.querySelectorAll('.suggestion-item').forEach(item => {
+      matches.forEach(match => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        if (isPlantNameSearch) {
+          item.textContent = match[nameField] || 'Ohne Namen';
+        } else {
+          item.textContent = match;
+        }
+        box.appendChild(item);
         item.addEventListener('mousedown', event => {
           event.preventDefault();
-          input.value = item.textContent || '';
+          input.value = isPlantNameSearch
+            ? String(match[nameField] || '')
+            : String(match || '');
           box.style.display = 'none';
           search();
         });
@@ -527,6 +635,15 @@
 
     function hideAllFieldSuggestions() {
       Object.keys(AUTOCOMPLETE_FIELD_MAP).forEach(hideFieldSuggestions);
+    }
+
+    function closeMultiSelects() {
+      ['field-month', 'field-color'].forEach(id => {
+        const select = document.getElementById(id);
+        if (!select) return;
+        select.size = 1;
+        select.classList.remove('is-open');
+      });
     }
 
     function isEditAllowed() {
@@ -645,14 +762,15 @@
       previewArea.style.width = '90px';
       previewArea.style.maxWidth = '100%';
       previewArea.style.aspectRatio = '1 / 1';
+      previewArea.style.boxSizing = 'border-box';
       previewArea.style.height = 'auto';
       previewArea.style.display = 'flex';
       previewArea.style.alignItems = 'center';
       previewArea.style.justifyContent = 'center';
-      previewArea.style.background = '#fafafa';
-      previewArea.style.borderRadius = '8px';
-      previewArea.style.border = '1px solid #ddd';
-      previewArea.style.padding = '0.5rem';
+      previewArea.style.background = 'transparent';
+      previewArea.style.borderRadius = '0';
+      previewArea.style.border = 'none';
+      previewArea.style.padding = '0';
       previewArea.style.position = 'relative';
       previewArea.style.cursor = 'default';
       previewArea.textContent = 'Vorschau wird geladen...';
@@ -696,6 +814,8 @@
       const img = document.createElement('img');
       img.alt = `Vorschau ${id}`;
       img.className = 'image-modal-img';
+      img.style.width = '100%';
+      img.style.height = '100%';
       img.style.maxWidth = '100%';
       img.style.maxHeight = '100%';
       img.style.objectFit = 'contain';
@@ -814,13 +934,11 @@
         <div class="image-modal-title">${existingRow ? 'Pflanze ändern' : 'Neue Pflanze hinzufügen'}</div>
         <form class="plant-modal-form" id="plantForm">
           <div class="plant-modal-grid">
-            <div class="plant-modal-field"><label for="plantId">ID</label><input id="plantId" type="text" value="${nextId}" readonly /></div>
             <div class="plant-modal-field"><label for="plantNameDe">Name Deutsch</label><input id="plantNameDe" name="plantNameDe" type="text" value="${prefill('Name Deutsch')}" required /></div>
             <div class="plant-modal-field"><label for="plantNameLatin">Name Latein</label><input id="plantNameLatin" name="plantNameLatin" type="text" value="${prefill('Name Latein')}" required /></div>
             <div class="plant-modal-field"><label for="plantFamily">Pflanzenfamilie</label><input id="plantFamily" name="plantFamily" type="text" value="${prefill('Pflanzenfamilie')}" required /></div>
             <div class="plant-modal-field"><label for="plantGrowth">Wuchsform</label><input id="plantGrowth" name="plantGrowth" type="text" value="${prefill('Wuchsform')}" required /></div>
             <div class="plant-modal-field"><label for="plantColor">Blütenfarbe</label><input id="plantColor" name="plantColor" type="text" value="${prefill('Blütenfarbe')}" required /></div>
-            <div class="plant-modal-field"><label for="plantPlanted">Gepflanzt</label><input id="plantPlanted" name="plantPlanted" type="text" value="${prefill('Gepflanzt')}" /></div>
           </div>
           <div class="plant-modal-field">
             <label>Blütenmonate</label>
@@ -868,7 +986,6 @@
         newRow['Pflanzenfamilie'] = String(formData.get('plantFamily') || '').trim();
         newRow['Wuchsform'] = String(formData.get('plantGrowth') || '').trim();
         newRow['Blütenfarbe'] = String(formData.get('plantColor') || '').trim();
-        newRow['Gepflanzt'] = String(formData.get('plantPlanted') || '').trim();
         MONTH_FIELDS.forEach(month => {
           newRow[month] = selectedMonths.includes(month) ? '1' : '0';
         });
@@ -953,30 +1070,84 @@
       });
     }
 
-    function openEditDialog() {
-      const id = window.prompt('Welche ID möchtest du ändern?');
-      if (id === null) return;
-      const row = findRowById(id);
-      if (!row) {
-        window.alert('Keine Pflanze mit dieser ID gefunden.');
-        return;
-      }
-      openPlantForm(row);
+    function openEditDialog(onSelect = row => openPlantForm(row), title = 'Pflanze zum Bearbeiten auswählen') {
+      const overlay = document.createElement('div');
+      overlay.className = 'image-modal-overlay';
+      overlay.tabIndex = -1;
+
+      const content = document.createElement('div');
+      content.className = 'image-modal-content plant-selector-panel';
+      content.innerHTML = `
+        <button class="image-modal-close" type="button">✕</button>
+        <div class="image-modal-title">${title}</div>
+        <div class="plant-modal-field">
+          <label for="editPlantSearch">Pflanze</label>
+          <input id="editPlantSearch" type="text" placeholder="Deutsch oder Latein suchen" autocomplete="off" />
+        </div>
+        <div id="editPlantResults" class="plant-selector-results"></div>
+      `;
+
+      const closePopup = () => {
+        if (overlay.parentNode) document.body.removeChild(overlay);
+      };
+
+      const openSelectedPlant = row => {
+        closePopup();
+        onSelect(row);
+      };
+
+      const input = content.querySelector('#editPlantSearch');
+      const results = content.querySelector('#editPlantResults');
+      const renderResults = () => {
+        const query = input.value.trim().toLowerCase();
+        const matches = rows.filter(row => {
+          if (!query) return true;
+          return startsWithWord(row['Name Deutsch'], query) || startsWithWord(row['Name Latein'], query);
+        });
+        results.innerHTML = '';
+        if (!matches.length) {
+          const empty = document.createElement('p');
+          empty.className = 'plant-selector-empty';
+          empty.textContent = 'Keine passende Pflanze gefunden.';
+          results.appendChild(empty);
+          return;
+        }
+        matches.forEach(row => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'plant-selector-item';
+          const germanName = document.createElement('strong');
+          germanName.textContent = row['Name Deutsch'] || 'Ohne deutschen Namen';
+          const latinName = document.createElement('span');
+          latinName.textContent = row['Name Latein'] || 'Ohne lateinischen Namen';
+          item.append(germanName, latinName);
+          item.addEventListener('click', () => openSelectedPlant(row));
+          results.appendChild(item);
+        });
+      };
+
+      content.querySelector('.image-modal-close').addEventListener('click', closePopup);
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay) closePopup();
+      });
+      input.addEventListener('focus', renderResults);
+      input.addEventListener('input', renderResults);
+
+      overlay.appendChild(content);
+      document.body.appendChild(overlay);
+      overlay.focus();
+      input.focus();
+      renderResults();
     }
 
     function openDeleteDialog() {
-      const id = window.prompt('Welche ID möchtest du löschen?');
-      if (id === null) return;
-      const row = findRowById(id);
-      if (!row) {
-        window.alert('Keine Pflanze mit dieser ID gefunden.');
-        return;
-      }
-      const label = row['Name Latein'] || row['Name Deutsch'] || row.ID;
-      const confirmed = window.confirm(`Möchtest du ${label} wirklich löschen?`);
-      if (!confirmed) return;
-      deletePlantById(row.ID);
-      collapseAdminToolbar();
+      openEditDialog(row => {
+        const label = row['Name Latein'] || row['Name Deutsch'];
+        const confirmed = window.confirm(`Möchtest du ${label} wirklich löschen?`);
+        if (!confirmed) return;
+        deletePlantById(row.ID);
+        collapseAdminToolbar();
+      }, 'Pflanze zum Löschen auswählen');
     }
 
     function collapseAdminToolbar() {
@@ -989,6 +1160,13 @@
       if (!activeMonths.length) return '';
       if (activeMonths.length === 1) return activeMonths[0];
       return `${activeMonths[0]} - ${activeMonths[activeMonths.length - 1]}`;
+    }
+
+    function formatColorList(row) {
+      const hasColorColumns = COLOR_FIELDS.some(color => Object.prototype.hasOwnProperty.call(row, color));
+      if (!hasColorColumns) return row['Blütenfarbe'] || '';
+      const activeColors = COLOR_FIELDS.filter(color => String(row[color] || '').trim() === '1');
+      return activeColors.join(', ');
     }
 
     function hasDisplayImages(row) {
@@ -1017,9 +1195,19 @@
       const headerRow = document.createElement('tr');
       const monthStartIndex = fieldNames.findIndex(name => MONTH_FIELDS.includes(name));
       const monthInsertIndex = monthStartIndex >= 0 ? monthStartIndex : fieldNames.length;
-      const visibleFields = fieldNames.filter(name => !MONTH_FIELDS.includes(name));
+      const colorStartIndex = fieldNames.findIndex(name => COLOR_FIELDS.includes(name));
+      const visibleFields = fieldNames.filter(name => !MONTH_FIELDS.includes(name) && !COLOR_FIELDS.includes(name));
       const fieldsWithBloomRange = [...visibleFields];
       fieldsWithBloomRange.splice(monthInsertIndex, 0, 'Blütenmonate');
+      if (colorStartIndex >= 0 && !fieldsWithBloomRange.includes('Blütenfarbe')) {
+        let colorInsertIndex = fieldsWithBloomRange.length;
+        for (let i = 0; i < fieldsWithBloomRange.length; i++) {
+          const name = fieldsWithBloomRange[i];
+          if (name === 'Blütenmonate') continue;
+          if (fieldNames.indexOf(name) > colorStartIndex) { colorInsertIndex = i; break; }
+        }
+        fieldsWithBloomRange.splice(colorInsertIndex, 0, 'Blütenfarbe');
+      }
 
       const headers = ['Bild', ...fieldsWithBloomRange];
       headers.forEach(name => {
@@ -1038,7 +1226,13 @@
         tr.appendChild(renderImageCell(row));
         fieldsWithBloomRange.forEach(name => {
           const td = document.createElement('td');
-          td.textContent = name === 'Blütenmonate' ? formatBloomRange(row) : (row[name] || '');
+          if (name === 'Blütenmonate') {
+            td.textContent = formatBloomRange(row);
+          } else if (name === 'Blütenfarbe') {
+            td.textContent = formatColorList(row);
+          } else {
+            td.textContent = row[name] || '';
+          }
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -1052,6 +1246,9 @@
     }
 
     function matchesFilter(value, selected) {
+      if (Array.isArray(selected)) {
+        return selected.includes('all') || selected.length === 0 || selected.includes(String(value || '').trim());
+      }
       if (selected === 'all') return true;
       return String(value || '').trim() === selected;
     }
@@ -1061,16 +1258,26 @@
         const input = document.getElementById(id);
         if (input) input.value = '';
       });
+      Object.keys(SELECT_FIELD_MAP).forEach(id => {
+        const select = document.getElementById(id);
+        if (!select) return;
+        select.querySelectorAll('option').forEach(option => {
+          option.selected = option.value === 'all';
+        });
+      });
       const monthSelect = document.getElementById('field-month');
       if (monthSelect) {
         monthSelect.querySelectorAll('option').forEach(option => {
           option.selected = option.value === 'all';
         });
       }
-      Object.keys(SELECT_FIELD_MAP).forEach(id => {
-        const select = document.getElementById(id);
-        if (select) select.value = 'all';
-      });
+      const colorSelect = document.getElementById('field-color');
+      if (colorSelect) {
+        colorSelect.querySelectorAll('option').forEach(option => {
+          option.selected = option.value === 'all';
+        });
+      }
+      closeMultiSelects();
       hideAllFieldSuggestions();
       document.getElementById('status').textContent = `Daten geladen: ${rows.length} Zeile(n)`;
       renderTable(rows);
@@ -1080,13 +1287,19 @@
       const monthSelect = document.getElementById('field-month');
       const selectedMonths = monthSelect ? Array.from(monthSelect.selectedOptions).map(option => option.value) : ['all'];
       const months = selectedMonths.includes('all') || selectedMonths.length === 0 ? ['all'] : selectedMonths;
+      const colorSelect = document.getElementById('field-color');
+      const selectedColors = colorSelect ? Array.from(colorSelect.selectedOptions).map(option => option.value) : ['all'];
+      const colors = selectedColors.includes('all') || selectedColors.length === 0 ? ['all'] : selectedColors;
       const textFilters = {};
       Object.keys(AUTOCOMPLETE_FIELD_MAP).forEach(id => {
         textFilters[AUTOCOMPLETE_FIELD_MAP[id]] = String(document.getElementById(id)?.value || '').trim().toLowerCase();
       });
       const selectFilters = {};
       Object.keys(SELECT_FIELD_MAP).forEach(id => {
-        selectFilters[SELECT_FIELD_MAP[id]] = document.getElementById(id).value;
+        const select = document.getElementById(id);
+        selectFilters[SELECT_FIELD_MAP[id]] = select.multiple
+          ? Array.from(select.selectedOptions).map(option => option.value)
+          : select.value;
       });
 
       const filtered = rows.filter(row => {
@@ -1100,6 +1313,9 @@
         }
         if (months[0] !== 'all') {
           if (!months.some(month => String(row[month] || '').trim() === '1')) return false;
+        }
+        if (colors[0] !== 'all') {
+          if (!colors.some(color => String(row[color] || '').trim() === '1')) return false;
         }
         return true;
       });
@@ -1144,48 +1360,54 @@
             renderFieldSuggestions(id, event.target.value || '', false);
           });
           input.addEventListener('focus', () => {
+            hideAllFieldSuggestions();
             renderFieldSuggestions(id, '', true);
           });
         });
 
-        const searchInputs = ['field-growth', 'field-planted'];
-        searchInputs.forEach(id => {
-          const element = document.getElementById(id);
-          if (!element) return;
-          element.addEventListener('input', search);
-          element.addEventListener('change', search);
-        });
-
-        const monthSelect = document.getElementById('field-month');
-        if (monthSelect) {
-          monthSelect.classList.add('compact');
-          monthSelect.addEventListener('click', () => {
-            monthSelect.size = monthSelect.size === 1 ? 12 : 1;
+        ['field-month', 'field-color'].forEach(id => {
+          const select = document.getElementById(id);
+          if (!select) return;
+          select.classList.add('compact');
+          select.addEventListener('click', event => {
+            if (event.target.tagName === 'OPTION') return;
+            const shouldOpen = select.size === 1;
+            closeMultiSelects();
+            if (shouldOpen) {
+              select.size = select.options.length;
+              select.classList.add('is-open');
+            }
           });
-          monthSelect.addEventListener('mousedown', event => {
+          select.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' || select.size === 1) return;
+            event.preventDefault();
+            closeMultiSelects();
+          });
+          select.addEventListener('mousedown', event => {
             if (event.target.tagName !== 'OPTION') return;
             event.preventDefault();
             const option = event.target;
             if (option.value === 'all') {
-              Array.from(monthSelect.options).forEach(opt => {
+              Array.from(select.options).forEach(opt => {
                 opt.selected = opt.value === 'all';
               });
             } else {
               option.selected = !option.selected;
-              const allOption = monthSelect.querySelector('option[value="all"]');
+              const allOption = select.querySelector('option[value="all"]');
               if (allOption) allOption.selected = false;
-              const anyMonthSelected = Array.from(monthSelect.options).some(opt => opt.selected && opt.value !== 'all');
-              if (!anyMonthSelected && allOption) {
+              const anySelected = Array.from(select.options).some(opt => opt.selected && opt.value !== 'all');
+              if (!anySelected && allOption) {
                 allOption.selected = true;
               }
             }
             search();
           });
-          monthSelect.addEventListener('change', search);
-        }
+          select.addEventListener('change', search);
+        });
 
         document.addEventListener('click', event => {
           if (event.target.closest('.autocomplete-wrapper')) return;
+          if (!event.target.closest('.filter-select-field')) closeMultiSelects();
           hideAllFieldSuggestions();
         });
 

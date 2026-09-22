@@ -3,11 +3,12 @@ import csv
 import html
 import re
 import sys
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from functools import partial
+from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-CSV_PATH = Path(__file__).with_name("Pflanzenliste_Maturaarbeit_DBV2.0_cvs.csv")
+CSV_PATH = Path(__file__).with_name("Pflanzenliste_Maturaarbeit_DBV5.0_cvs.csv")
 FILTER_FIELDS = ["Name Deutsch", "Name Latein", "Pflanzenfamilie", "Wuchsform", "Gepflanzt"]
 MONTH_FIELDS = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
 
@@ -217,7 +218,8 @@ def main():
         print(f"CSV-Datei nicht gefunden: {CSV_PATH}", file=sys.stderr)
         sys.exit(1)
 
-    server = ThreadingHTTPServer((args.host, args.port), SearchHandler)
+    handler = partial(SimpleHTTPRequestHandler, directory=str(Path(__file__).resolve().parent))
+    server = ThreadingHTTPServer((args.host, args.port), handler)
     local_host = "127.0.0.1" if args.host == "0.0.0.0" else args.host
     print(f"Websuche gestartet: http://{local_host}:{args.port}/")
     if args.host == "0.0.0.0":
