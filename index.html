@@ -103,7 +103,10 @@
     .multi-select-trigger { text-align: left; background: #fff; color: #222; font-weight: 400; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; }
     .multi-select-trigger:hover { background: #f7f9fc; }
     .multi-select-search { display: block; width: 100%; height: 2.7rem; margin-bottom: 0.5rem; padding: 0.55rem 0.7rem; border: 1px solid #bbb; border-radius: 5px; box-sizing: border-box; font: inherit; }
-    .multi-select-options { max-height: min(45vh, 360px); overflow-y: auto; }
+    .multi-select-trigger:focus,
+    .multi-select-search:focus { outline: 2px solid #bbb; outline-offset: 0; box-shadow: none; }
+    .filter-select-field > .suggestions { max-height: min(45vh, 360px); overflow: hidden; padding: 0.5rem; }
+    .multi-select-options { max-height: calc(min(45vh, 360px) - 3.7rem); overflow-y: auto; }
     .visually-hidden-multiselect { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     .suggestion-item.selected { background: #eaf2fc; font-weight: 600; }
     .suggestion-item { display: block; width: 100%; padding: 0.5rem 0.7rem; box-sizing: border-box; cursor: pointer; }
