@@ -717,10 +717,17 @@
         hideAllFieldSuggestions();
         box.style.display = 'block';
       });
+      searchInput.addEventListener('click', () => {
+        if (box.style.display === 'block') return;
+        closeMultiSelects();
+        hideAllFieldSuggestions();
+        box.style.display = 'block';
+      });
       searchInput.addEventListener('keydown', event => {
-        if (event.key === 'Escape') {
+        if (event.key === 'Escape' || event.key === 'Enter') {
+          event.preventDefault();
           closeMultiSelects();
-          searchInput.blur();
+          if (event.key === 'Escape') searchInput.blur();
         }
       });
     }
@@ -1445,6 +1452,17 @@
           input.addEventListener('focus', () => {
             hideAllFieldSuggestions();
             renderFieldSuggestions(id, '', true);
+          });
+          input.addEventListener('click', () => {
+            const box = document.getElementById(`${id}-suggestions`);
+            if (box?.style.display === 'block') return;
+            hideAllFieldSuggestions();
+            renderFieldSuggestions(id, input.value || '', false);
+          });
+          input.addEventListener('keydown', event => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            hideAllFieldSuggestions();
           });
         });
 
