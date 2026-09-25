@@ -7,7 +7,7 @@
 9;Wiesen-Salbei;Salvia pratensis;Lamiaceae;0;0;0;0;1;1;1;1;0;0;0;0;Staude;0;0;0;0;0;1;0;0;25.04.2026
 12;Blutroter Storchschnabel;Geranium sanguineum;Geraniaceae;0;0;0;0;1;1;1;0;0;0;0;0;Staude;0;0;0;0;0;0;1;0;25.04.2026
 15;Echter Wundklee;Anthyllis vulneraria;Fabaceae;0;0;0;0;1;1;1;1;1;0;0;0;Staude;0;0;1;0;0;0;0;0;11.04.2026
-20;Europäische Weinrebe;"Vitis vinifera ""Seyval B""";Vitaceae;0;0;0;1;1;0;0;0;0;0;0;0;Kletterpflanze;0;0;0;1;0;0;0;0;03.08.2026
+20;Europäische Weinrebe;Vitis vinifera (Seyval B);Vitaceae;0;0;0;1;1;0;0;0;0;0;0;0;Kletterpflanze;0;0;0;1;0;0;0;0;03.08.2026
 21;Wintergrüne Ölweide;Elaeagnus ebbingei;Elaeagnaceae;0;0;0;0;0;0;0;0;1;1;1;0;Strauch;0;0;1;0;0;0;0;1;24.06.2026
 22;Feldahorn;Acer campestre;Sapindaceae;0;0;0;0;1;0;0;0;0;0;0;0;Baum;0;0;1;1;0;0;0;0;24.06.2026
 23;Roter Perückenstrauch;Cotinus coggygria;Anacardiaceae;0;0;0;0;0;1;1;0;0;0;0;0;Strauch;1;0;0;0;0;0;0;0;03.08.2026
@@ -98,7 +98,7 @@
 147;Kornelkirsche;Cornus mas L.;Cornaceae;0;0;1;0;0;0;0;0;0;0;0;0;Baumartiger Strauch;0;0;1;0;0;0;0;0;24.06.2026
 148;Faulbaum;Frangula alnus Mill.;Rhamnaceae;0;0;0;0;1;1;0;0;0;0;0;0;Baumartiger Strauch;0;0;1;1;0;0;0;0;24.06.2026
 149;Alpen-Johannisbeere;Ribes alpinum L.;Grossulariaceae;0;0;0;1;1;1;0;0;0;0;0;0;Strauch;0;0;1;1;0;0;0;0;24.06.2026
-151;"Himalaya-Zeder ""Golden Horizon""";Cedrus deodara;Pinaceae;0;0;0;0;0;0;0;0;1;1;0;0;Baum;1;0;1;0;0;0;0;0;03.08.2026
+151;Himalaya-Zeder (Golden Horizon);Cedrus deodara;Pinaceae;0;0;0;0;0;0;0;0;1;1;0;0;Baum;1;0;1;0;0;0;0;0;03.08.2026
 152;Kamminze;Elsholtzia ciliata;Lamiaceae;0;0;0;0;0;0;1;1;1;1;0;0;Einjähriges Kraut;0;0;0;0;0;1;1;0;03.08.2026
 153;Roter Holunder;Sambucus racemosa L.;Adoxaceae;0;0;0;1;1;0;0;0;0;0;0;0;Strauch;0;0;1;1;0;0;0;0;03.08.2026
 154;Raue Nelke;Dianthus armeria L.;Caryophyllaceae;0;0;0;0;0;1;1;1;0;0;0;0;Zweijähriges Kraut;0;0;0;0;0;0;1;0;03.08.2026
